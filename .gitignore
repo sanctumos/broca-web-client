@@ -1,0 +1,236 @@
+# Database files
+db/*.db
+db/*.sqlite
+db/*.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+logs/
+*.log
+api.log
+error.log
+access.log
+
+# PHP specific
+*.php~
+*.php.bak
+*.php.swp
+*.php.swo
+composer.lock
+vendor/
+node_modules/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+.classpath
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+*.backup
+*~
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+
+# Configuration files with sensitive data
+config/local.php
+config/production.php
+config/staging.php
+
+# Test files and coverage
+coverage/
+.phpunit.result.cache
+test_*.json
+test_*.php
+simple_test.py
+test_plugin.py
+
+# Build and deployment files
+build/
+dist/
+deploy/
+*.tar.gz
+*.zip
+
+# Python cache (for the plugin)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Backup files
+*.backup
+*.old
+*.orig
+
+# Session files
+sess_*
+session_*
+
+# Upload directories
+uploads/
+files/
+media/
+
+# Cache directories
+cache/
+tmp/
+temp/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Documentation build files
+docs/_build/
+docs/build/
+
+# Package files
+*.tgz
+*.tar
+*.rar
+
+# Database dumps
+*.sql
+*.dump
+
+# Backup directories
+backup/
+backups/
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# OS specific
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows specific
+*.lnk
+*.url
+*.pif
+*.scr
+*.exe
+*.msi
+*.msm
+*.msp
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Network and security
+.htaccess.local
+.htpasswd
+*.key
+*.pem
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# Development tools
+.phpunit.cache/
+.php_cs.cache
+.php-cs-fixer.cache
+.phpstan.cache
+
+# Local development
+local/
+dev/
+development/
+
+# Monitoring and analytics
+analytics/
+stats/
+metrics/
+
+# Backup and archive
+archive/
+archives/
+*.7z
+*.bz2
+*.gz
+*.xz
+
+# Test data
+test_data/
+fixtures/
+samples/
+
+# Documentation build
+docs/build/
+docs/_build/
+site/
+
+# IDE workspace files
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Local configuration overrides
+config.local.php
+settings.local.php
+database.local.php
+
+# Temporary test files
+test_*.json
+test_*.php
+temp_*.php
+debug_*.php
+
+# Plugin test files (keep source but ignore test artifacts)
+plugin_web_chat/__pycache__/
+plugin_web_chat/*.pyc
+plugin_web_chat/*.pyo
+plugin_web_chat/*.pyd
+plugin_web_chat/.Python
+plugin_web_chat/env/
+plugin_web_chat/venv/
+plugin_web_chat/.env
+plugin_web_chat/test_*.py
+plugin_web_chat/simple_test.py
+db/web_chat.db
