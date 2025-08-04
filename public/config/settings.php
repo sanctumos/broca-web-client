@@ -27,7 +27,7 @@ define('API_KEY_PREFIX', 'Bearer ');
 
 // Get API key from environment or config
 function get_api_key() {
-    return getenv('WEB_CHAT_API_KEY') ?: 'api_h8hcbfg4uiqfz6sjy1h6ri';
+    return getenv('WEB_CHAT_API_KEY') ?: 'YOUR_WEB_CHAT_API_KEY';
 }
 
 // Get admin key from environment or config
@@ -78,6 +78,11 @@ define('MAX_SESSIONS_PER_IP', 10); // Max concurrent sessions per IP
 define('LOG_LEVEL', 'INFO'); // DEBUG, INFO, WARNING, ERROR
 define('LOG_FILE', __DIR__ . '/../logs/api.log');
 
+// Log retention settings
+define('LOG_RETENTION_DAYS', 30); // Keep logs for 30 days
+define('LOG_MAX_SIZE_MB', 100); // Max log file size in MB
+define('LOG_PRUNE_PROBABILITY', 0.01); // 1% chance to prune on each log write
+
 // Security settings
 define('ENABLE_HTTPS_ONLY', true); // Force HTTPS in production
 define('SANITIZE_INPUT', true); // Sanitize all input
@@ -108,7 +113,59 @@ function log_message($level, $message, $context = []) {
     
     file_put_contents(LOG_FILE, $log_entry, FILE_APPEND | LOCK_EX);
     
+    // Occasionally prune old logs
+    if (mt_rand(1, 100) <= (LOG_PRUNE_PROBABILITY * 100)) {
+        prune_logs();
+    }
+    
     if (DEBUG_MODE) {
         error_log($log_entry);
+    }
+}
+
+/**
+ * Prune old log entries and rotate large log files
+ */
+function prune_logs() {
+    $log_dir = dirname(LOG_FILE);
+    $current_log = LOG_FILE;
+    
+    // Check if current log file is too large
+    if (file_exists($current_log) && filesize($current_log) > (LOG_MAX_SIZE_MB * 1024 * 1024)) {
+        $backup_name = $current_log . '.' . date('Y-m-d-H-i-s');
+        rename($current_log, $backup_name);
+        
+        // Keep only the most recent backup
+        $backup_files = glob($current_log . '.*');
+        if (count($backup_files) > 3) {
+            // Sort by modification time and remove oldest
+            usort($backup_files, function($a, $b) {
+                return filemtime($a) - filemtime($b);
+            });
+            
+            // Remove oldest backups, keep only 3 most recent
+            $files_to_remove = array_slice($backup_files, 0, count($backup_files) - 3);
+            foreach ($files_to_remove as $file) {
+                unlink($file);
+            }
+        }
+    }
+    
+    // Remove old backup files based on retention period
+    $cutoff_time = time() - (LOG_RETENTION_DAYS * 24 * 60 * 60);
+    $backup_files = glob($current_log . '.*');
+    
+    foreach ($backup_files as $file) {
+        if (filemtime($file) < $cutoff_time) {
+            unlink($file);
+        }
+    }
+    
+    // Also clean up any other log files in the directory that are too old
+    $all_log_files = glob($log_dir . '/*.log*');
+    foreach ($all_log_files as $file) {
+        if (filemtime($file) < $cutoff_time && $file !== $current_log) {
+            unlink($file);
+        }
     }
 } 

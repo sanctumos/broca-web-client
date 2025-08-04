@@ -48,12 +48,15 @@ switch ($action) {
     case 'cleanup':
         handle_cleanup();
         break;
-               case 'clear_data':
-               handle_clear_data();
-               break;
-           case 'session_messages':
-               handle_session_messages();
-               break;
+                       case 'clear_data':
+            handle_clear_data();
+            break;
+        case 'cleanup_logs':
+            handle_cleanup_logs();
+            break;
+        case 'session_messages':
+            handle_session_messages();
+            break;
            default:
                send_error_response('Invalid action', 400);
                break;
@@ -663,6 +666,63 @@ function handle_session_messages() {
         
     } catch (Exception $e) {
         log_api_request('/api/messages', 'GET', [], 500);
+        send_error_response('Internal server error', 500);
+    }
+}
+
+/**
+ * Handle POST /api/v1/index.php?action=cleanup_logs
+ * Manually trigger log cleanup and rotation
+ */
+function handle_cleanup_logs() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        send_error_response('Method not allowed', 405);
+    }
+    
+    // Admin authentication required
+    require_admin_auth();
+    
+    try {
+        // Force log pruning
+        prune_logs();
+        
+        // Get log file info
+        $log_file = LOG_FILE;
+        $log_size = file_exists($log_file) ? filesize($log_file) : 0;
+        $log_size_mb = round($log_size / (1024 * 1024), 2);
+        
+        // Count backup files
+        $backup_files = glob($log_file . '.*');
+        $backup_count = count($backup_files);
+        
+        // Calculate total log size including backups
+        $total_size = $log_size;
+        foreach ($backup_files as $backup) {
+            $total_size += filesize($backup);
+        }
+        $total_size_mb = round($total_size / (1024 * 1024), 2);
+        
+        log_message('INFO', 'Manual log cleanup triggered by admin', [
+            'admin_ip' => get_client_ip(),
+            'current_size_mb' => $log_size_mb,
+            'backup_count' => $backup_count,
+            'total_size_mb' => $total_size_mb
+        ]);
+        
+        send_success_response([
+            'message' => 'Log cleanup completed successfully',
+            'current_log_size_mb' => $log_size_mb,
+            'backup_files_count' => $backup_count,
+            'total_log_size_mb' => $total_size_mb,
+            'retention_days' => LOG_RETENTION_DAYS,
+            'max_size_mb' => LOG_MAX_SIZE_MB
+        ]);
+        
+    } catch (Exception $e) {
+        log_message('ERROR', 'Failed to cleanup logs', [
+            'error' => $e->getMessage(),
+            'admin_ip' => get_client_ip()
+        ]);
         send_error_response('Internal server error', 500);
     }
 } 

@@ -77,7 +77,7 @@ All API responses follow a consistent JSON format:
 **cURL Example:**
 ```bash
 curl -X GET \
-     -H "Authorization: Bearer api_h8hcbfg4uiqfz6sjy1h6ri" \
+     -H "Authorization: Bearer YOUR_WEB_CHAT_API_KEY" \
      -H "Content-Type: application/json" \
      "http://localhost:8000/api/v1/?action=inbox&limit=10&offset=0"
 ```
@@ -127,7 +127,7 @@ curl -X GET \
 **cURL Example:**
 ```bash
 curl -X POST \
-     -H "Authorization: Bearer api_h8hcbfg4uiqfz6sjy1h6ri" \
+     -H "Authorization: Bearer YOUR_WEB_CHAT_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
          "session_id": "session_abc123",
@@ -470,6 +470,38 @@ curl -X POST \
 }
 ```
 
+### 7. Cleanup Logs
+
+**Endpoint:** `POST /api/v1/?action=cleanup_logs`
+
+**Description:** Manually trigger log file rotation and cleanup of old log files.
+
+**Authentication:** Admin password required
+
+**cURL Example:**
+```bash
+curl -X POST \
+     -H "Authorization: Bearer free0ps" \
+     -H "Content-Type: application/json" \
+     "http://localhost:8000/api/v1/?action=cleanup_logs"
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Log cleanup completed successfully",
+    "timestamp": "2025-08-04T03:17:33+00:00",
+    "data": {
+        "current_log_size_mb": 2.5,
+        "backup_files_count": 3,
+        "total_log_size_mb": 15.2,
+        "retention_days": 30,
+        "max_size_mb": 100
+    }
+}
+```
+
 ---
 
 ## Error Handling
@@ -628,7 +660,7 @@ curl -X POST \
 
 ### Test API Key Authentication
 ```bash
-curl -H "Authorization: Bearer api_test_key" \
+curl -H "Authorization: Bearer YOUR_API_KEY" \
      "http://localhost:8000/api/v1/?action=inbox"
 ```
 
@@ -643,7 +675,7 @@ curl -X POST \
 ### Test Response Submission
 ```bash
 curl -X POST \
-     -H "Authorization: Bearer api_h8hcbfg4uiqfz6sjy1h6ri" \
+     -H "Authorization: Bearer YOUR_WEB_CHAT_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"session_id": "test_session_123", "response": "Test response"}' \
      "http://localhost:8000/api/v1/?action=outbox"
@@ -669,9 +701,11 @@ curl -H "Authorization: Bearer free0ps" \
 ### Environment Variables
 
 The API uses the following configuration files:
-- `config/settings.php` - API settings and keys
+- `config/settings.php` - API settings and keys (configurable via `get_api_key()` function)
 - `config/database.php` - Database configuration
 - `includes/auth.php` - Authentication logic
+
+**Note:** The API key is configurable in `config/settings.php` via the `get_api_key()` function. The default key can be overridden by setting the `WEB_CHAT_API_KEY` environment variable.
 
 ---
 

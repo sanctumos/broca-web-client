@@ -544,6 +544,12 @@
                                         <small class="text-muted d-block mt-1">Remove inactive sessions</small>
                                     </div>
                                     <div class="mb-3">
+                                        <button class="btn btn-info" onclick="cleanupLogs()">
+                                            <i class="bi bi-file-earmark-text"></i> Cleanup Logs
+                                        </button>
+                                        <small class="text-muted d-block mt-1">Rotate and prune old log files</small>
+                                    </div>
+                                    <div class="mb-3">
                                         <button class="btn btn-danger" onclick="clearAllData()">
                                             <i class="bi bi-exclamation-triangle"></i> Clear All Data
                                         </button>
@@ -821,6 +827,37 @@
             } catch (error) {
                 console.error('Failed to perform cleanup:', error);
                 alert('Failed to perform cleanup: ' + error.message);
+            }
+        }
+        
+        async function cleanupLogs() {
+            if (!confirm('This will rotate the current log file and remove old log files older than 30 days. Continue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/index.php?action=cleanup_logs', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminKey}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Log cleanup completed!\n\nCurrent log size: ${data.data.current_log_size_mb} MB\nBackup files: ${data.data.backup_files_count}\nTotal log size: ${data.data.total_log_size_mb} MB\nRetention: ${data.data.retention_days} days\nMax size: ${data.data.max_size_mb} MB`);
+                } else {
+                    throw new Error(data.error || 'Failed to cleanup logs');
+                }
+                
+            } catch (error) {
+                console.error('Failed to cleanup logs:', error);
+                alert('Failed to cleanup logs: ' + error.message);
             }
         }
         
