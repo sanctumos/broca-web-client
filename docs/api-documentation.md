@@ -108,6 +108,8 @@ curl -X GET \
 }
 ```
 
+**Note:** Messages are automatically marked as processed when retrieved. The `uid` field provides a persistent user identifier across sessions.
+
 ### 2. Submit Response
 
 **Endpoint:** `POST /api/v1/?action=outbox`
@@ -120,9 +122,17 @@ curl -X GET \
 ```json
 {
     "session_id": "session_abc123",
-    "response": "Hello! I'm here to help you. What can I assist you with today?"
+    "response": "Hello! I'm here to help you. What can I assist you with today?",
+    "message_id": 1,
+    "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
+
+**Fields:**
+- `session_id` (required): Session ID to send response to
+- `response` (required): The agent's response message
+- `message_id` (optional): ID of the specific message being responded to
+- `timestamp` (optional): ISO timestamp (defaults to current time)
 
 **cURL Example:**
 ```bash
@@ -131,7 +141,8 @@ curl -X POST \
      -H "Content-Type: application/json" \
      -d '{
          "session_id": "session_abc123",
-         "response": "Hello! I am here to help you. What can I assist you with today?"
+         "response": "Hello! I am here to help you. What can I assist you with today?",
+         "message_id": 1
      }' \
      "http://localhost:8000/api/v1/?action=outbox"
 ```
@@ -160,6 +171,7 @@ curl -X POST \
 
 **Query Parameters:**
 - `session_id` (required): Session ID to get responses for
+- `since` (optional): ISO timestamp to get responses since specific time
 
 **cURL Example:**
 ```bash
@@ -175,17 +187,20 @@ curl -X GET \
     "message": "Responses retrieved successfully",
     "timestamp": "2025-08-04T03:17:33+00:00",
     "data": {
+        "session_id": "session_abc123",
         "responses": [
             {
                 "id": 1,
-                "session_id": "session_abc123",
                 "response": "Hello! I am here to help you. What can I assist you with today?",
-                "timestamp": "2025-08-04T03:17:33+00:00"
+                "timestamp": "2025-08-04T03:17:33+00:00",
+                "message_id": 1
             }
         ]
     }
 }
 ```
+
+**Note:** The `message_id` field links responses to specific messages when provided during submission.
 
 ### 4. Submit Message
 
@@ -199,9 +214,15 @@ curl -X GET \
 ```json
 {
     "session_id": "session_abc123",
-    "message": "Can you help me with my project?"
+    "message": "Can you help me with my project?",
+    "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
+
+**Fields:**
+- `session_id` (required): Session ID for the message
+- `message` (required): The user's message content
+- `timestamp` (optional): ISO timestamp (defaults to current time)
 
 **cURL Example:**
 ```bash
@@ -230,6 +251,8 @@ curl -X POST \
     }
 }
 ```
+
+**Note:** The `uid` field provides a persistent user identifier, and `is_new_user` indicates if this is a new user to the system.
 
 ---
 
@@ -380,8 +403,7 @@ curl -X GET \
 ```json
 {
     "api_key": "api_new_key_123",
-    "admin_key": "new_admin_password",
-    "session_timeout": 1800
+    "admin_key": "new_admin_password"
 }
 ```
 
@@ -392,8 +414,7 @@ curl -X POST \
      -H "Content-Type: application/json" \
      -d '{
          "api_key": "api_new_key_123",
-         "admin_key": "new_admin_password",
-         "session_timeout": 1800
+         "admin_key": "new_admin_password"
      }' \
      "http://localhost:8000/api/v1/?action=config"
 ```
@@ -405,9 +426,7 @@ curl -X POST \
     "message": "Configuration updated successfully",
     "timestamp": "2025-08-04T03:17:33+00:00",
     "data": {
-        "api_key": "api_new_key_123",
-        "admin_key": "new_admin_password",
-        "session_timeout": 1800
+        "message": "Configuration updated successfully"
     }
 }
 ```
@@ -435,7 +454,8 @@ curl -X POST \
     "message": "Cleanup completed successfully",
     "timestamp": "2025-08-04T03:17:33+00:00",
     "data": {
-        "cleaned_count": 5
+        "cleaned_count": 5,
+        "message": "Cleaned up 5 inactive sessions"
     }
 }
 ```
@@ -463,9 +483,12 @@ curl -X POST \
     "message": "All data cleared successfully",
     "timestamp": "2025-08-04T03:17:33+00:00",
     "data": {
-        "cleared_sessions": 10,
-        "cleared_messages": 25,
-        "cleared_responses": 15
+        "message": "All data cleared successfully",
+        "remaining_data": {
+            "responses": 0,
+            "messages": 0,
+            "sessions": 0
+        }
     }
 }
 ```
@@ -493,6 +516,7 @@ curl -X POST \
     "message": "Log cleanup completed successfully",
     "timestamp": "2025-08-04T03:17:33+00:00",
     "data": {
+        "message": "Log cleanup completed successfully",
         "current_log_size_mb": 2.5,
         "backup_files_count": 3,
         "total_log_size_mb": 15.2,
@@ -523,6 +547,7 @@ curl -X POST \
 {
     "success": false,
     "error": "Authentication required",
+    "code": 401,
     "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
@@ -531,7 +556,9 @@ curl -X POST \
 ```json
 {
     "success": false,
-    "error": "Rate limit exceeded. Please try again later.",
+    "error": "Rate limit exceeded",
+    "code": 429,
+    "retry_after": 3600,
     "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
@@ -541,6 +568,7 @@ curl -X POST \
 {
     "success": false,
     "error": "Invalid session ID format",
+    "code": 400,
     "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
@@ -550,6 +578,7 @@ curl -X POST \
 {
     "success": false,
     "error": "Session not found",
+    "code": 404,
     "timestamp": "2025-08-04T03:17:33+00:00"
 }
 ```
@@ -558,13 +587,19 @@ curl -X POST \
 
 ## Rate Limiting
 
-The API implements rate limiting to prevent abuse:
+The API implements sophisticated rate limiting with hourly windows and endpoint-specific limits:
 
-- **Public Endpoints:** 100 requests per minute per IP
-- **Admin Endpoints:** 50 requests per minute per IP
-- **Plugin Endpoints:** 200 requests per minute per API key
+- **Rate Limit Window:** 1 hour (3600 seconds)
+- **Public Endpoints:**
+  - `/api/messages`: 50 requests per hour per IP
+  - `/api/responses`: 200 requests per hour per IP
+- **Plugin Endpoints:**
+  - `/api/inbox`: 120 requests per hour per API key
+  - `/api/outbox`: 200 requests per hour per API key
+- **Admin Endpoints:**
+  - `/api/sessions`: 20 requests per hour per IP
 
-When rate limited, the API returns a `429 Too Many Requests` status with an error message.
+When rate limited, the API returns a `429 Too Many Requests` status with a `retry_after` field indicating when to retry.
 
 ---
 
@@ -575,7 +610,7 @@ When rate limited, the API returns a `429 Too Many Requests` status with an erro
 1. **Creation:** Sessions are automatically created when a message is submitted
 2. **Activity:** Sessions are marked as active when messages or responses are sent
 3. **Timeout:** Sessions become inactive after 30 minutes of no activity
-4. **Cleanup:** Inactive sessions are automatically cleaned up
+4. **Cleanup:** Inactive sessions are automatically cleaned up (10% chance per API call)
 
 ### Session ID Format
 
@@ -591,6 +626,50 @@ Each user gets a unique, persistent UID that remains consistent across sessions:
 - **Example:** `2632f72d266e529c`
 - **Storage:** Stored in database and returned with messages
 - **Purpose:** Track users across multiple sessions
+- **Generation:** Automatically generated using cryptographically secure random bytes
+- **Persistence:** UID remains the same for a user across multiple sessions
+
+### Automatic Cleanup
+
+The system automatically cleans up inactive sessions:
+- **Trigger:** 10% chance on each API call
+- **Criteria:** Sessions inactive for more than 30 minutes
+- **Process:** Removes inactive sessions and associated data
+
+---
+
+## Database Schema
+
+### Core Tables
+
+#### `web_chat_sessions`
+- `id` (VARCHAR(64)): Primary key, session identifier
+- `uid` (VARCHAR(16)): Unique user identifier
+- `created_at` (TEXT): Session creation timestamp
+- `last_active` (TEXT): Last activity timestamp
+- `ip_address` (VARCHAR(45)): Client IP address
+- `metadata` (TEXT): JSON metadata storage
+
+#### `web_chat_messages`
+- `id` (INTEGER): Primary key, auto-increment
+- `session_id` (VARCHAR(64)): Foreign key to sessions
+- `message` (TEXT): Message content
+- `timestamp` (TEXT): Message timestamp
+- `processed` (INTEGER): Processing status (0=unprocessed, 1=processed)
+- `broca_message_id` (INTEGER): Optional Broca2 message ID
+
+#### `web_chat_responses`
+- `id` (INTEGER): Primary key, auto-increment
+- `session_id` (VARCHAR(64)): Foreign key to sessions
+- `response` (TEXT): Response content
+- `timestamp` (TEXT): Response timestamp
+- `message_id` (INTEGER): Optional link to specific message
+
+#### `rate_limits`
+- `ip_address` (VARCHAR(45)): Client IP address
+- `endpoint` (VARCHAR(50)): API endpoint
+- `count` (INTEGER): Request count in current window
+- `window_start` (TEXT): Window start timestamp
 
 ---
 
@@ -601,17 +680,19 @@ Each user gets a unique, persistent UID that remains consistent across sessions:
 1. **Polling Strategy:**
    - Poll the `/inbox` endpoint every 5-10 seconds
    - Process messages in order by timestamp
-   - Submit responses using the `/responses` endpoint
+   - Submit responses using the `/outbox` endpoint
+   - Use the `message_id` field to link responses to specific messages
 
 2. **Error Handling:**
    - Implement exponential backoff for failed requests
    - Log all API errors for debugging
-   - Handle rate limiting gracefully
+   - Handle rate limiting gracefully using the `retry_after` field
 
 3. **Message Processing:**
    - Always check the `success` field in responses
    - Handle empty message arrays gracefully
-   - Use the `uid` field to track users
+   - Use the `uid` field to track users across sessions
+   - Messages are automatically marked as processed when retrieved
 
 ### Example Plugin Workflow
 
@@ -623,11 +704,11 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 # 2. Process each message with Broca2
 # (Your plugin logic here)
 
-# 3. Submit response
+# 3. Submit response with message linking
 curl -X POST \
      -H "Authorization: Bearer YOUR_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"session_id": "session_123", "response": "Agent response"}' \
+     -d '{"session_id": "session_123", "response": "Agent response", "message_id": 1}' \
      "http://localhost:8000/api/v1/?action=outbox"
 ```
 
@@ -648,7 +729,8 @@ curl -X POST \
 ### Input Validation
 - All inputs are validated and sanitized
 - Session IDs must match expected format
-- Messages are limited to reasonable length
+- Messages are limited to 10KB maximum length
+- UIDs are validated as 16-character hex strings
 
 ### CORS Configuration
 - API supports cross-origin requests for web chat widget
@@ -672,12 +754,12 @@ curl -X POST \
      "http://localhost:8000/api/v1/?action=messages"
 ```
 
-### Test Response Submission
+### Test Response Submission with Message Linking
 ```bash
 curl -X POST \
      -H "Authorization: Bearer YOUR_WEB_CHAT_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"session_id": "test_session_123", "response": "Test response"}' \
+     -d '{"session_id": "test_session_123", "response": "Test response", "message_id": 1}' \
      "http://localhost:8000/api/v1/?action=outbox"
 ```
 
@@ -694,9 +776,10 @@ curl -H "Authorization: Bearer free0ps" \
 ### Default Settings
 
 - **Session Timeout:** 30 minutes (1800 seconds)
-- **Rate Limiting:** 100 requests/minute for public endpoints
+- **Rate Limiting:** Hourly windows with endpoint-specific limits
 - **Database:** SQLite with automatic cleanup
 - **CORS:** Enabled for web chat widget
+- **Log Retention:** 30 days with 100MB max file size
 
 ### Environment Variables
 
@@ -715,7 +798,8 @@ For API support or questions:
 1. Check the error responses for specific issues
 2. Verify authentication credentials
 3. Ensure proper request format
-4. Check rate limiting status
+4. Check rate limiting status using the `retry_after` field
 5. Review session timeout settings
+6. Monitor automatic cleanup logs
 
 The API is designed to be self-documenting with clear error messages and consistent response formats. 
