@@ -36,6 +36,8 @@ web_chat_bridge_flask/
 └── run.py
 ```
 
+**Note:** The original PHP system has been moved to the `php/` folder for reference during development.
+
 ## Core Dependencies
 
 ```txt

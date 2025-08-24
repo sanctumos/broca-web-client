@@ -6,15 +6,15 @@ This document provides complete technical specifications for porting the Web Cha
 
 ## System Architecture
 
-### Current PHP Architecture
+### Current PHP Architecture (Located in `php/` folder)
 ```
-Admin Interface (admin.php) 
+Admin Interface (php/public/web/admin.php) 
     ↓ (HTTP requests)
-API Endpoints (index.php)
+API Endpoints (php/public/api/v1/index.php)
     ↓ (direct calls)
-Database Functions (utils.php, auth.php)
+Database Functions (php/public/includes/utils.php, php/public/includes/auth.php)
     ↓ (direct SQL)
-SQLite Database
+SQLite Database (php/db/web_chat.db)
 ```
 
 ### Required Flask Architecture
@@ -843,16 +843,23 @@ WEB_CHAT_LOG_PATH=/path/to/logs/
 ## Migration Notes
 
 ### Data Preservation
-- **Export existing data** before migration
+- **Export existing data** from `php/db/web_chat.db` before migration
 - **Verify data integrity** after migration
 - **Test all functionality** with real data
 - **Plan rollback strategy** if issues arise
 
 ### Configuration Migration
-- **Transfer API keys** and admin passwords
+- **Transfer API keys** and admin passwords from `php/public/config/settings.php`
 - **Update environment variables** in new system
 - **Verify rate limiting** settings match
 - **Test authentication** with existing keys
+
+### File Structure Changes
+- **Original PHP system** is now located in the `php/` folder
+- **Database file** moved from `db/web_chat.db` to `php/db/web_chat.db`
+- **Configuration files** moved from `public/config/` to `php/public/config/`
+- **Admin interface** moved from `public/web/` to `php/public/web/`
+- **API endpoints** moved from `public/api/` to `php/public/api/`
 
 ### Testing Strategy
 - **Run both systems** in parallel initially

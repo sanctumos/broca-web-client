@@ -601,13 +601,13 @@ class RateLimitManager:
 
 #### 1. Export PHP Data
 ```bash
-# Create SQLite dump from PHP system
-sqlite3 web_chat_bridge.db ".dump" > php_export.sql
+# Create SQLite dump from PHP system (now located in php/ folder)
+sqlite3 php/db/web_chat.db ".dump" > php_export.sql
 
 # Or export specific tables
-sqlite3 web_chat_bridge.db "SELECT * FROM web_chat_sessions;" > sessions.csv
-sqlite3 web_chat_bridge.db "SELECT * FROM web_chat_messages;" > messages.csv
-sqlite3 web_chat_bridge.db "SELECT * FROM web_chat_responses;" > responses.csv
+sqlite3 php/db/web_chat.db "SELECT * FROM web_chat_sessions;" > sessions.csv
+sqlite3 php/db/web_chat.db "SELECT * FROM web_chat_messages;" > messages.csv
+sqlite3 php/db/web_chat.db "SELECT * FROM web_chat_responses;" > responses.csv
 ```
 
 #### 2. Import to Flask System

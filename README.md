@@ -6,6 +6,8 @@ A secure, API-first PHP web chat bridge that enables web-based chat integration 
 
 This PHP application serves as a bridge between web chat widgets and Broca2 agents. It provides:
 
+**Note:** The original PHP implementation has been moved to the `php/` folder and serves as a reference for the Flask port development. The system is being ported to Flask while maintaining 100% functional parity.
+
 - **Zero New Attack Surface**: No new inbound ports on your Sanctum server
 - **API-First Design**: Clean, well-documented REST API
 - **Secure Communication**: Authentication and rate limiting
@@ -45,23 +47,26 @@ This project serves as a **reference implementation** for the PHP web chat bridg
 
 ```
 sanctum-web-chat/
-├── public/                # Web-accessible content (Nginx document root)
-│   ├── index.php          # Main entry point
-│   ├── api/               # API endpoints
-│   │   └── v1/
-│   │       └── index.php  # Single API entry point with querystring routing
-│   ├── config/            # Configuration
-│   │   ├── database.php   # Database setup and connection
-│   │   └── settings.php   # API settings and rate limits
-│   ├── includes/          # Shared functionality
-│   │   ├── auth.php       # Authentication and rate limiting
-│   │   └── api_response.php # Standardized API responses
-│   └── web/               # Web interfaces
-│       ├── chat.php       # Web chat widget
-│       ├── admin.php      # Admin monitoring interface
-│       └── assets/
-│           ├── chat.js    # Frontend JavaScript
-│           └── style.css  # Chat widget styling
+├── php/                   # Original PHP implementation (reference)
+│   ├── public/            # Web-accessible content (Nginx document root)
+│   │   ├── index.php      # Main entry point
+│   │   ├── api/           # API endpoints
+│   │   │   └── v1/
+│   │   │       └── index.php  # Single API entry point with querystring routing
+│   │   ├── config/        # Configuration
+│   │   │   ├── database.php   # Database setup and connection
+│   │   │   └── settings.php   # API settings and rate limits
+│   │   ├── includes/      # Shared functionality
+│   │   │   ├── auth.php       # Authentication and rate limiting
+│   │   │   └── api_response.php # Standardized API responses
+│   │   └── web/           # Web interfaces
+│   │       ├── chat.php       # Web chat widget
+│   │       ├── admin.php      # Admin monitoring interface
+│   │       └── assets/
+│   │           ├── chat.js    # Frontend JavaScript
+│   │           └── style.css  # Chat widget styling
+│   └── db/                # Database files (outside public)
+│       └── web_chat.db    # SQLite database (auto-created)
 ├── plugin_web_chat/       # Broca2 Plugin (Complete Implementation)
 │   ├── plugin.py          # Main plugin class implementing Plugin interface
 │   ├── api_client.py      # HTTP client for PHP API communication
@@ -71,9 +76,14 @@ sanctum-web-chat/
 │   ├── simple_test.py     # Basic functionality test
 │   ├── README.md          # Plugin documentation
 │   └── BUILD_SUMMARY.md   # Implementation summary
-├── db/                    # Database files (outside public)
-│   └── web_chat.db       # SQLite database (auto-created)
+├── db/                    # New database initialization (for Flask port)
+│   └── init_database.sql  # SQL initialization script
 ├── docs/                  # Documentation
+│   ├── port-docs/         # Flask port documentation
+│   │   ├── flask-port-specification.md
+│   │   ├── admin-interface-specification.md
+│   │   ├── database-schema-and-migration.md
+│   │   └── flask-implementation-guide.md
 │   ├── plugin-development.md
 │   ├── api-documentation.md
 │   └── project-plan.md

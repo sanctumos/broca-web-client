@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document specifies the exact admin interface functionality that must be implemented in the Flask port. The admin interface provides comprehensive monitoring and management capabilities for the Web Chat Bridge system.
+This document specifies the exact admin interface functionality that must be implemented in the Flask port. The admin interface provides comprehensive monitoring and management capabilities for the Web Chat Bridge system, replicating the functionality of the original PHP implementation (now located in `php/public/web/admin.php`).
 
 ## Admin Interface Structure
 
