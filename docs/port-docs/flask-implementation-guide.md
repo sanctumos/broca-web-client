@@ -84,10 +84,10 @@ class Config:
     DATABASE_PATH = os.environ.get('DATABASE_PATH') or 'db/web_chat_bridge.db'
     LOG_PATH = os.environ.get('LOG_PATH') or 'logs'
     
-    # Database configuration is loaded from system_config table
-    # These are fallback values only - actual config comes from database
-    DEFAULT_API_KEY = 'YOUR_WEB_CHAT_API_KEY'
-    DEFAULT_ADMIN_KEY = 'free0ps'
+               # Database configuration is loaded from system_config table
+           # These are fallback values only - actual config comes from database
+           DEFAULT_API_KEY = 'ObeyG1ant'
+           DEFAULT_ADMIN_KEY = 'FreeUkra1ne'
     
     # Hardcoded constants (not in database)
     API_KEY_HEADER = 'Authorization'

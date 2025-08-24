@@ -91,8 +91,8 @@ The following configuration keys are stored in the `system_config` table:
 
 ```sql
 -- Core API Configuration
-'api_key' = 'YOUR_WEB_CHAT_API_KEY'           -- API key for external integrations
-'admin_key' = 'free0ps'              -- Admin authentication key
+'api_key' = 'ObeyG1ant'              -- API key for external integrations
+'admin_key' = 'FreeUkra1ne'          -- Admin authentication key
 
 -- Rate Limiting
 'rate_limit_window' = '3600'         -- 1 hour in seconds
