@@ -32,7 +32,7 @@ def get_sessions():
         
         return jsonify({
             'success': True,
-            'message': 'Sessions retrieved successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'sessions': sessions,
@@ -95,7 +95,7 @@ def get_session_messages():
         
         return jsonify({
             'success': True,
-            'message': 'Session messages retrieved',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'session': dict(session),
@@ -118,7 +118,7 @@ def handle_config():
             config = db.get_all_config()
             return jsonify({
                 'success': True,
-                'message': 'Configuration retrieved successfully',
+                'message': 'Success',
                 'timestamp': datetime.now().isoformat(),
                 'data': config
             })
@@ -135,7 +135,7 @@ def handle_config():
             db.update_config(data)
             return jsonify({
                 'success': True,
-                'message': 'Configuration updated successfully',
+                'message': 'Success',
                 'timestamp': datetime.now().isoformat()
             })
             
@@ -152,7 +152,7 @@ def manual_cleanup():
         cleaned_count = db.cleanup_inactive_sessions()
         return jsonify({
             'success': True,
-            'message': 'Cleanup completed successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'cleaned_count': cleaned_count,
@@ -192,7 +192,7 @@ def clear_all_data():
         
         return jsonify({
             'success': True,
-            'message': 'All data cleared successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'message': 'All data cleared successfully',
@@ -215,7 +215,7 @@ def cleanup_logs():
         # This is a placeholder - implement actual log cleanup logic
         return jsonify({
             'success': True,
-            'message': 'Log cleanup completed successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'message': 'Log cleanup completed successfully',

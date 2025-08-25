@@ -50,7 +50,7 @@ def send_message():
         
         return jsonify({
             'success': True,
-            'message': 'Message sent successfully',
+            'message': 'Success',
             'data': {
                 'message_id': message_id,
                 'session_id': session_id,
@@ -81,6 +81,7 @@ def get_responses():
         
         return jsonify({
             'success': True,
+            'message': 'Success',
             'data': {
                 'session_id': session_id,
                 'responses': responses

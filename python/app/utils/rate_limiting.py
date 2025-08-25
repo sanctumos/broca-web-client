@@ -7,22 +7,22 @@ class RateLimitManager:
         self.db_manager = db_manager
     
     def check_rate_limit(self, ip_address: str, endpoint: str, limit: int) -> bool:
-        """Check if request is within rate limit"""
+        """Check if request is within rate limit - IDENTICAL to PHP"""
         conn = self.db_manager.get_connection()
         try:
             cursor = conn.cursor()
             
-            # Calculate window start (1 hour ago)
+            # Calculate window start (1 hour ago) - IDENTICAL to PHP
             window_start = datetime.now() - timedelta(hours=1)
             window_start_str = window_start.strftime('%Y-%m-%d %H:%M:%S')
             
-            # Clean up old rate limit entries
+            # Clean up old rate limit entries - IDENTICAL to PHP
             cursor.execute("""
                 DELETE FROM rate_limits 
                 WHERE window_start < ?
             """, (window_start_str,))
             
-            # Check current rate limit for this IP + endpoint
+            # Check current rate limit for this IP + endpoint - IDENTICAL to PHP
             cursor.execute("""
                 SELECT request_count FROM rate_limits 
                 WHERE ip_address = ? AND endpoint = ? AND window_start >= ?
@@ -34,7 +34,7 @@ class RateLimitManager:
             if current_count >= limit:
                 return False  # Rate limit exceeded
             
-            # Update or insert rate limit entry
+            # Update or insert rate limit entry - IDENTICAL to PHP
             if result:
                 cursor.execute("""
                     UPDATE rate_limits 

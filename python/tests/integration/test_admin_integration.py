@@ -95,7 +95,7 @@ class TestAdminIntegration:
         assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
-        assert 'Configuration updated successfully' in data['message']
+        assert data['message'] == 'Success'
         
         # Verify the config was updated
         response = client.get('/admin/api/config', headers=auth_headers['admin_key'])
@@ -117,7 +117,7 @@ class TestAdminIntegration:
         assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
-        assert 'Cleanup completed successfully' in data['message']
+        assert data['message'] == 'Success'
         assert 'cleaned_count' in data['data']
     
     def test_admin_clear_all_data(self, client, auth_headers, app_context):
@@ -126,7 +126,7 @@ class TestAdminIntegration:
         assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
-        assert 'All data cleared successfully' in data['message']
+        assert data['message'] == 'Success'
         assert 'cleaned_data' in data['data']
         assert 'sessions' in data['data']['cleaned_data']
         assert 'messages' in data['data']['cleaned_data']
@@ -138,7 +138,7 @@ class TestAdminIntegration:
         assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
-        assert 'Log cleanup completed successfully' in data['message']
+        assert data['message'] == 'Success'
         assert 'current_log_size_mb' in data['data']
         assert 'backup_files_count' in data['data']
         assert 'retention_days' in data['data']

@@ -171,7 +171,7 @@ def handle_messages():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Message received',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'message_id': message_id,
@@ -222,7 +222,7 @@ def handle_inbox():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Messages retrieved successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'messages': messages,
@@ -284,7 +284,7 @@ def handle_outbox():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Response sent successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'response_id': response_id,
@@ -328,7 +328,7 @@ def handle_responses():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Responses retrieved successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'session_id': session_id,
@@ -366,7 +366,7 @@ def handle_sessions():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Sessions retrieved successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'sessions': sessions,
@@ -397,7 +397,7 @@ def handle_config():
             # Response format - IDENTICAL to PHP
             return jsonify({
                 'success': True,
-                'message': 'Configuration retrieved successfully',
+                'message': 'Success',
                 'timestamp': datetime.now().isoformat(),
                 'data': config
             })
@@ -417,7 +417,7 @@ def handle_config():
             # Response format - IDENTICAL to PHP
             return jsonify({
                 'success': True,
-                'message': 'Configuration updated successfully',
+                'message': 'Success',
                 'timestamp': datetime.now().isoformat()
             })
             
@@ -441,7 +441,7 @@ def handle_cleanup():
         # Response format - IDENTICAL to PHP
         return jsonify({
             'success': True,
-            'message': 'Cleanup completed successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'cleaned_count': cleaned_count,
@@ -489,7 +489,7 @@ def handle_clear_data():
         
         return jsonify({
             'success': True,
-            'message': 'All data cleared successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'message': 'All data cleared successfully',
@@ -535,7 +535,7 @@ def handle_cleanup_logs():
         
         return jsonify({
             'success': True,
-            'message': 'Log cleanup completed successfully',
+            'message': 'Success',
             'timestamp': datetime.now().isoformat(),
             'data': {
                 'message': 'Log cleanup completed successfully',
