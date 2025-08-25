@@ -76,14 +76,15 @@ sanctum-web-chat/
 │   ├── simple_test.py     # Basic functionality test
 │   ├── README.md          # Plugin documentation
 │   └── BUILD_SUMMARY.md   # Implementation summary
-├── db/                    # New database initialization (for Flask port)
-│   └── init_database.sql  # SQL initialization script
+├── python/                # Flask port implementation
+│   ├── db/                # Database initialization scripts
+│   │   └── init_database.sql  # SQL initialization script
+│   └── port-docs/         # Flask port documentation
+│       ├── flask-port-specification.md
+│       ├── admin-interface-specification.md
+│       ├── database-schema-and-migration.md
+│       └── flask-implementation-guide.md
 ├── docs/                  # Documentation
-│   ├── port-docs/         # Flask port documentation
-│   │   ├── flask-port-specification.md
-│   │   ├── admin-interface-specification.md
-│   │   ├── database-schema-and-migration.md
-│   │   └── flask-implementation-guide.md
 │   ├── plugin-development.md
 │   ├── api-documentation.md
 │   └── project-plan.md

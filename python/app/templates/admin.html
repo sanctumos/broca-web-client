@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Chat Bridge - Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 3px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .table th { background: #f8f9fa; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Web Chat Bridge - Admin Interface</h1>
+            <p>Monitor sessions and manage configuration</p>
+        </div>
+
+        <div class="section">
+            <h2>Active Sessions</h2>
+            <div class="form-group">
+                <label for="sessionLimit">Limit:</label>
+                <select id="sessionLimit">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                </select>
+                <button class="btn" onclick="loadSessions()">Load Sessions</button>
+            </div>
+            <div id="sessionsTable"></div>
+        </div>
+
+        <div class="section">
+            <h2>Configuration</h2>
+            <div class="form-group">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" placeholder="Enter new API key">
+            </div>
+            <div class="form-group">
+                <label for="adminKey">Admin Key:</label>
+                <input type="text" id="adminKey" placeholder="Enter new admin key">
+            </div>
+            <button class="btn" onclick="updateConfig()">Update Configuration</button>
+            <button class="btn" onclick="loadConfig()">Load Current Config</button>
+        </div>
+
+        <div class="section">
+            <h2>Maintenance</h2>
+            <button class="btn" onclick="cleanupSessions()">Cleanup Inactive Sessions</button>
+            <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let currentAdminKey = '';
+
+        // Prompt for admin key on page load
+        window.onload = function() {
+            currentAdminKey = prompt('Enter admin key:');
+            if (currentAdminKey) {
+                loadSessions();
+                loadConfig();
+            }
+        };
+
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+
+        function loadSessions() {
+            const limit = document.getElementById('sessionLimit').value;
+            fetch(`/admin/api/sessions?limit=${limit}`, {
+                headers: {
+                    'Authorization': `Bearer ${currentAdminKey}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displaySessions(data.data.sessions);
+                } else {
+                    showStatus('Error loading sessions: ' + data.error, true);
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, true);
+            });
+        }
+
+        function displaySessions(sessions) {
+            const table = document.getElementById('sessionsTable');
+            if (sessions.length === 0) {
+                table.innerHTML = '<p>No active sessions found.</p>';
+                return;
+            }
+
+            let html = '<table class="table"><thead><tr><th>Session ID</th><th>UID</th><th>IP Address</th><th>Created</th><th>Last Activity</th><th>Messages</th></tr></thead><tbody>';
+            
+            sessions.forEach(session => {
+                html += `<tr>
+                    <td>${session.session_id}</td>
+                    <td>${session.uid}</td>
+                    <td>${session.ip_address || 'N/A'}</td>
+                    <td>${session.created_at}</td>
+                    <td>${session.last_activity}</td>
+                    <td>${session.message_count || 0}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            table.innerHTML = html;
+        }
+
+        function loadConfig() {
+            fetch('/admin/api/config', {
+                headers: {
+                    'Authorization': `Bearer ${currentAdminKey}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('apiKey').value = data.data.api_key || '';
+                    document.getElementById('adminKey').value = data.data.admin_key || '';
+                } else {
+                    showStatus('Error loading config: ' + data.error, true);
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, true);
+            });
+        }
+
+        function updateConfig() {
+            const apiKey = document.getElementById('apiKey').value;
+            const adminKey = document.getElementById('adminKey').value;
+            
+            if (!apiKey && !adminKey) {
+                showStatus('Please enter at least one value to update', true);
+                return;
+            }
+
+            const config = {};
+            if (apiKey) config.api_key = apiKey;
+            if (adminKey) config.admin_key = adminKey;
+
+            fetch('/admin/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentAdminKey}`
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('Configuration updated successfully');
+                    loadConfig();
+                } else {
+                    showStatus('Error updating config: ' + data.error, true);
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, true);
+            });
+        }
+
+        function cleanupSessions() {
+            if (!confirm('Are you sure you want to cleanup inactive sessions?')) return;
+
+            fetch('/admin/api/cleanup', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${currentAdminKey}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(`Cleanup completed: ${data.data.message}`);
+                    loadSessions();
+                } else {
+                    showStatus('Error during cleanup: ' + data.error, true);
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, true);
+            });
+        }
+
+        function clearAllData() {
+            if (!confirm('WARNING: This will delete ALL data. Are you absolutely sure?')) return;
+            if (!confirm('This action cannot be undone. Are you REALLY sure?')) return;
+
+            fetch('/admin/api/clear_data', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${currentAdminKey}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('All data cleared successfully');
+                    loadSessions();
+                } else {
+                    showStatus('Error clearing data: ' + data.error, true);
+                }
+            })
+            .catch(error => {
+                showStatus('Error: ' + error.message, true);
+            });
+        }
+    </script>
+</body>
+</html>
