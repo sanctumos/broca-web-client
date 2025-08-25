@@ -263,6 +263,8 @@ def handle_outbox():
     message_id = data.get('message_id', 0)
     timestamp = data.get('timestamp', datetime.now().isoformat())
     
+
+    
     # Validate required fields - IDENTICAL to PHP
     if not session_id or not response:
         return jsonify({'success': False, 'error': 'Missing required fields'}), 400

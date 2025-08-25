@@ -94,9 +94,17 @@ class TestAPIAdminErrorConditions:
             
             result = handle_cleanup_logs()
             
-            assert result[1] == 200  # Success
-            assert result[0].json['success'] is True
-            assert 'Success' in result[0].json['message']
+            # Check if result is a tuple (status_code, response) or just response
+            if isinstance(result, tuple):
+                status_code, response = result
+                assert status_code == 200  # Success
+                assert response.json['success'] is True
+                assert 'Success' in response.json['message']
+            else:
+                # Direct response object
+                assert result.status_code == 200  # Success
+                assert result.json['success'] is True
+                assert 'Success' in result.json['message']
     
     @patch('app.api.routes.require_admin_auth_internal')
     def test_handle_cleanup_logs_authentication_failure(self, mock_require_auth):

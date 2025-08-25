@@ -24,12 +24,12 @@ class RateLimitManager:
             
             # Check current rate limit for this IP + endpoint - IDENTICAL to PHP
             cursor.execute("""
-                SELECT request_count FROM rate_limits 
+                SELECT count FROM rate_limits 
                 WHERE ip_address = ? AND endpoint = ? AND window_start >= ?
             """, (ip_address, endpoint, window_start_str))
             
             result = cursor.fetchone()
-            current_count = result['request_count'] if result else 0
+            current_count = result['count'] if result else 0
             
             if current_count >= limit:
                 return False  # Rate limit exceeded
@@ -38,13 +38,13 @@ class RateLimitManager:
             if result:
                 cursor.execute("""
                     UPDATE rate_limits 
-                    SET request_count = request_count + 1, updated_at = datetime('now')
+                    SET count = count + 1
                     WHERE ip_address = ? AND endpoint = ? AND window_start >= ?
                 """, (ip_address, endpoint, window_start_str))
             else:
                 cursor.execute("""
-                    INSERT INTO rate_limits (ip_address, endpoint, request_count, window_start, created_at, updated_at)
-                    VALUES (?, ?, 1, ?, datetime('now'), datetime('now'))
+                    INSERT INTO rate_limits (ip_address, endpoint, count, window_start)
+                    VALUES (?, ?, 1, ?)
                 """, (ip_address, endpoint, window_start_str))
             
             conn.commit()
@@ -64,15 +64,15 @@ class RateLimitManager:
             window_start_str = window_start.strftime('%Y-%m-%d %H:%M:%S')
             
             cursor.execute("""
-                SELECT request_count, window_start FROM rate_limits 
+                SELECT count, window_start FROM rate_limits 
                 WHERE ip_address = ? AND endpoint = ? AND window_start >= ?
             """, (ip_address, endpoint, window_start_str))
             
             result = cursor.fetchone()
             if result:
                 return {
-                    'request_count': result['request_count'],
-                    'current_count': result['request_count'],
+                    'request_count': result['count'],
+                    'current_count': result['count'],
                     'window_start': result['window_start'],
                     'window_end': (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
                 }

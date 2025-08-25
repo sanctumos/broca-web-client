@@ -183,17 +183,17 @@ class DatabaseManager:
         """)
     
     def session_exists(self, session_id: str) -> bool:
-        """Check if session exists"""
+        """Check if session exists - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM web_chat_sessions WHERE session_id = ?", (session_id,))
+            cursor.execute("SELECT id FROM web_chat_sessions WHERE id = ?", (session_id,))
             return cursor.fetchone() is not None
         finally:
             conn.close()
     
     def create_session(self, session_id: str, ip_address: str = None, user_agent: str = None):
-        """Create new session"""
+        """Create new session - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
@@ -201,9 +201,9 @@ class DatabaseManager:
             uid = self.generate_uid()
             
             cursor.execute("""
-                INSERT INTO web_chat_sessions (session_id, uid, ip_address, user_agent, created_at, last_activity, is_active, metadata)
-                VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), 1, ?)
-            """, (session_id, uid, ip_address, user_agent, json.dumps({})))
+                INSERT INTO web_chat_sessions (id, uid, ip_address, metadata)
+                VALUES (?, ?, ?, ?)
+            """, (session_id, uid, ip_address, json.dumps({})))
             conn.commit()
             return uid
         finally:
@@ -215,11 +215,11 @@ class DatabaseManager:
         return secrets.token_hex(8)
     
     def get_or_create_uid(self, session_id: str, ip_address: str = None) -> Dict[str, Any]:
-        """Get existing UID or create new one"""
+        """Get existing UID or create new one - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            cursor.execute("SELECT uid FROM web_chat_sessions WHERE session_id = ?", (session_id,))
+            cursor.execute("SELECT uid FROM web_chat_sessions WHERE id = ?", (session_id,))
             result = cursor.fetchone()
             
             if result:
@@ -232,14 +232,14 @@ class DatabaseManager:
             conn.close()
     
     def create_message(self, session_id: str, message: str, message_type: str = 'user') -> int:
-        """Create new message"""
+        """Create new message - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO web_chat_messages (session_id, message, message_type, created_at, metadata)
-                VALUES (?, ?, ?, datetime('now'), ?)
-            """, (session_id, message, message_type, json.dumps({})))
+                INSERT INTO web_chat_messages (session_id, message, timestamp)
+                VALUES (?, ?, datetime('now'))
+            """, (session_id, message))
             conn.commit()
             return cursor.lastrowid
         finally:
@@ -255,18 +255,18 @@ class DatabaseManager:
             params = []
             
             if since:
-                where_conditions.append("m.created_at > ?")
+                where_conditions.append("m.timestamp > ?")
                 params.append(since)
             
             where_clause = " AND ".join(where_conditions)
             
             # Query IDENTICAL to PHP version
             sql = f"""
-                SELECT m.id, m.session_id, m.message, m.created_at as timestamp, s.uid
+                SELECT m.id, m.session_id, m.message, m.timestamp, s.uid
                 FROM web_chat_messages m
-                LEFT JOIN web_chat_sessions s ON m.session_id = s.session_id
+                LEFT JOIN web_chat_sessions s ON m.session_id = s.id
                 WHERE {where_clause}
-                ORDER BY m.created_at ASC
+                ORDER BY m.timestamp ASC
                 LIMIT ? OFFSET ?
             """
             params.extend([limit, offset])
@@ -286,7 +286,7 @@ class DatabaseManager:
             params = []
             
             if since:
-                where_conditions.append("created_at > ?")
+                where_conditions.append("timestamp > ?")
                 params.append(since)
             
             where_clause = " AND ".join(where_conditions)
@@ -368,15 +368,22 @@ class DatabaseManager:
             conn.close()
     
     def get_active_sessions(self, limit: int, offset: int, active: bool = True) -> List[Dict]:
-        """Get active sessions with message/response counts"""
+        """Get active sessions with message/response counts - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             
-            # Use the view for better performance
+            # Query IDENTICAL to PHP version
             sql = """
-                SELECT * FROM active_sessions_view
-                ORDER BY last_activity DESC
+                SELECT s.id, s.uid, s.created_at, s.last_active, s.ip_address, s.metadata,
+                       COUNT(DISTINCT m.id) as message_count,
+                       COUNT(DISTINCT r.id) as response_count
+                FROM web_chat_sessions s
+                LEFT JOIN web_chat_messages m ON s.id = m.session_id
+                LEFT JOIN web_chat_responses r ON s.id = r.session_id
+                WHERE s.last_active > datetime('now', '-1 day')
+                GROUP BY s.id
+                ORDER BY s.last_active DESC
                 LIMIT ? OFFSET ?
             """
             
@@ -386,12 +393,12 @@ class DatabaseManager:
             conn.close()
     
     def get_session_count(self, active: bool = True) -> int:
-        """Get total session count"""
+        """Get total session count - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             if active:
-                cursor.execute("SELECT COUNT(*) FROM web_chat_sessions WHERE is_active = 1")
+                cursor.execute("SELECT COUNT(*) FROM web_chat_sessions WHERE last_active > datetime('now', '-1 day')")
             else:
                 cursor.execute("SELECT COUNT(*) FROM web_chat_sessions")
             return cursor.fetchone()[0]
@@ -399,13 +406,13 @@ class DatabaseManager:
             conn.close()
     
     def cleanup_inactive_sessions(self) -> int:
-        """Clean up inactive sessions"""
+        """Clean up inactive sessions - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("""
                 DELETE FROM web_chat_sessions 
-                WHERE last_activity < datetime('now', '-1800 seconds')
+                WHERE last_active < datetime('now', '-1800 seconds')
             """)
             conn.commit()
             return cursor.rowcount
@@ -459,14 +466,14 @@ class DatabaseManager:
             conn.close()
     
     def update_session_activity(self, session_id: str):
-        """Update the last_activity timestamp for a session"""
+        """Update the last_active timestamp for a session - IDENTICAL to PHP"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE web_chat_sessions 
-                SET last_activity = datetime('now')
-                WHERE session_id = ?
+                SET last_active = datetime('now')
+                WHERE id = ?
             """, (session_id,))
             conn.commit()
         finally:
