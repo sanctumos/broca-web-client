@@ -1,7 +1,18 @@
 # Embeddable Chat Widget Development Plan
 
+## 🚨 CRITICAL CONSTRAINT: MINIMAL CORE CODE MODIFICATIONS
+**This widget implementation is primarily visual but requires minimal, safe additions.**
+- ❌ **NO modifications** to existing Flask app files (except one line in `__init__.py`)
+- ❌ **NO changes** to existing API endpoints  
+- ❌ **NO modifications** to existing database schema
+- ❌ **NO changes** to existing routes or blueprints
+- ✅ **ONLY** new static files and templates
+- ✅ **ONLY** new routes that don't conflict with existing ones
+- ✅ **ONLY** visual/UI additions
+- ⚠️ **MINIMAL** one-line addition to register new blueprint
+
 ## 🎯 Overview
-Create a lightweight, embeddable chat widget that can be integrated into any website or application while maintaining 100% compatibility with the existing Flask API and database architecture.
+Create a lightweight, embeddable chat widget that can be integrated into any website or application while maintaining 100% compatibility with the existing Flask API and database architecture. This is a **pure frontend addition** that communicates with your existing, unchanged API endpoints.
 
 ## 🏗️ Architecture
 
@@ -26,10 +37,17 @@ python/widget/
 ```
 
 ### 2. Integration Points
-- **API Compatibility**: Uses existing Flask API endpoints (`/api/v1/?action=*`)
-- **Database**: Shares existing SQLite database and session management
-- **Authentication**: Uses existing API key system
-- **Rate Limiting**: Inherits existing rate limiting logic
+- **API Compatibility**: Uses existing Flask API endpoints (`/api/v1/?action=*`) - **NO CHANGES**
+- **Database**: Shares existing SQLite database and session management - **NO CHANGES**
+- **Authentication**: Uses existing API key system - **NO CHANGES**
+- **Rate Limiting**: Inherits existing rate limiting logic - **NO CHANGES**
+
+### 3. Implementation Strategy (Minimal Invasiveness)
+- **New Blueprint**: Create `widget` blueprint with `url_prefix='/widget'` (doesn't conflict with existing routes)
+- **Static Files**: Add new CSS/JS files in `static/widget/` folder
+- **Templates**: Add new HTML templates in `templates/widget/` folder
+- **Existing App**: Register new blueprint in `app/__init__.py` with **ONE LINE ADDITION** (no existing code changes)
+- **API Communication**: Widget makes HTTP requests to your existing, unchanged API endpoints
 
 ## 🔧 Technical Implementation
 
@@ -280,6 +298,35 @@ SanctumChat.on('open', function() {
 - User-requested features
 - Industry trend adoption
 - Competitive feature parity
+
+## 📁 File Creation vs. Modification
+
+### 🆕 NEW FILES TO CREATE:
+- `app/widget/__init__.py` - New widget blueprint
+- `app/widget/routes.py` - Widget-specific routes
+- `app/widget/templates/widget.html` - Widget documentation page
+- `app/widget/templates/widget_demo.html` - Widget demo page
+- `app/widget/static/css/widget.css` - Widget styles
+- `app/widget/static/js/chat-widget.js` - Widget JavaScript
+- `app/widget/static/assets/icons/` - Widget icons
+- `app/widget/README.md` - Widget documentation
+
+### 🔒 EXISTING FILES - MINIMAL MODIFICATIONS:
+- `app/__init__.py` - **ONLY ADD** one line to register new blueprint (no existing code changes)
+  - **Example**: `app.register_blueprint(widget_bp)` - just adding this line
+  - **Location**: After existing blueprint registrations
+  - **Impact**: Zero - just registers new routes without touching existing functionality
+
+### 🔒 EXISTING FILES - NO MODIFICATIONS:
+- `app/api/routes.py` - **NO CHANGES**
+- `app/admin/routes.py` - **NO CHANGES**
+- `app/chat/routes.py` - **NO CHANGES**
+- `app/utils/database.py` - **NO CHANGES**
+- `app/utils/rate_limiting.py` - **NO CHANGES**
+- `config.py` - **NO CHANGES**
+- `run.py` - **NO CHANGES**
+- Database schema - **NO CHANGES**
+- Existing API endpoints - **NO CHANGES**
 
 ## 🎯 Next Steps
 
