@@ -63,7 +63,7 @@ def get_session_messages():
         conn = db.get_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT * FROM web_chat_sessions WHERE session_id = ?
+            SELECT * FROM web_chat_sessions WHERE id = ?
         """, (session_id,))
         session = cursor.fetchone()
         
@@ -72,8 +72,8 @@ def get_session_messages():
         
         # Get messages
         cursor.execute("""
-            SELECT id, session_id, message, created_at FROM web_chat_messages 
-            WHERE session_id = ? ORDER BY created_at ASC
+            SELECT id, session_id, message, timestamp FROM web_chat_messages 
+            WHERE session_id = ? ORDER BY timestamp ASC
         """, (session_id,))
         messages = [dict(row) for row in cursor.fetchall()]
         

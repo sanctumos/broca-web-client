@@ -39,7 +39,7 @@ class TestRateLimitManager:
             
             # Mock existing rate limit record under the limit
             mock_cursor.fetchone.return_value = {
-                'request_count': 25,
+                'count': 25,
                 'window_start': datetime.now().isoformat()
             }
             mock_get_conn.return_value = mock_conn
@@ -58,7 +58,7 @@ class TestRateLimitManager:
             
             # Mock existing rate limit record at the limit
             mock_cursor.fetchone.return_value = {
-                'request_count': 50,
+                'count': 50,
                 'window_start': datetime.now().isoformat()
             }
             mock_get_conn.return_value = mock_conn
@@ -76,7 +76,7 @@ class TestRateLimitManager:
             
             # Mock existing rate limit record over the limit
             mock_cursor.fetchone.return_value = {
-                'request_count': 75,
+                'count': 75,
                 'window_start': datetime.now().isoformat()
             }
             mock_get_conn.return_value = mock_conn
@@ -176,7 +176,7 @@ class TestRateLimitManager:
             
             # Mock rate limit record
             mock_cursor.fetchone.return_value = {
-                'request_count': 25,
+                'count': 25,
                 'window_start': '2025-08-24T16:00:00'
             }
             mock_get_conn.return_value = mock_conn
@@ -286,7 +286,7 @@ class TestRateLimitManager:
             assert result is True
             
             # Second request should be blocked (now there's an existing record)
-            mock_cursor.fetchone.return_value = {'request_count': 1}  # Existing record
+            mock_cursor.fetchone.return_value = {'count': 1}  # Existing record
             result = rate_limiter.check_rate_limit('192.168.1.1', '/api/messages', 1)
             assert result is False
     

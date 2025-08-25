@@ -223,7 +223,7 @@ class TestE2EUserWorkflows:
         assert len(data['data']['sessions']) >= 5
         
         # 3. Verify session details
-        session_ids = [s['session_id'] for s in data['data']['sessions']]
+        session_ids = [s['id'] for s in data['data']['sessions']]
         for session in sessions:
             assert session['session_id'] in session_ids
         
@@ -431,7 +431,7 @@ class TestE2EUserWorkflows:
         assert len(data['data']['sessions']) >= 50  # Should have all our sessions
         
         # Check that all session IDs are present
-        session_ids = [s['session_id'] for s in data['data']['sessions']]
+        session_ids = [s['id'] for s in data['data']['sessions']]
         for i in range(50):
             expected_session = f'session_load_test_{i}'
             assert expected_session in session_ids
@@ -496,7 +496,7 @@ class TestE2EUserWorkflows:
         
         session_found = False
         for session in data['data']['sessions']:
-            if session['session_id'] == 'session_persistent':
+            if session['id'] == 'session_persistent':
                 session_found = True
                 break
         

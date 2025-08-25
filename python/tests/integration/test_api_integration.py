@@ -328,7 +328,7 @@ class TestAPIIntegration:
         assert data['success'] is True
         
         # Should have at least our 10 sessions
-        session_ids = [s['session_id'] for s in data['data']['sessions']]
+        session_ids = [s['id'] for s in data['data']['sessions']]
         for i in range(10):
             expected_session = f'session_concurrent_{i}'
             assert expected_session in session_ids
