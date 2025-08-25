@@ -19,6 +19,9 @@ def create_app(config_class=Config):
     from app.chat import bp as chat_bp
     app.register_blueprint(chat_bp, url_prefix='/chat')
     
+    from app.widget import bp as widget_bp
+    app.register_blueprint(widget_bp)
+    
     # Add error handlers for API endpoints
     @app.errorhandler(405)
     def method_not_allowed(error):
