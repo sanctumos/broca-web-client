@@ -4,6 +4,26 @@
  */
 
 /**
+ * Get the base URL for the current request
+ * 
+ * @return string Base URL (e.g., https://example.com)
+ */
+function get_base_url(): string {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $port = $_SERVER['SERVER_PORT'] ?? '';
+    
+    // Don't include port 80 for HTTP or 443 for HTTPS
+    if (($protocol === 'http' && $port === '80') || ($protocol === 'https' && $port === '443')) {
+        $port = '';
+    }
+    
+    $port_str = $port ? ":$port" : '';
+    
+    return "{$protocol}://{$host}{$port_str}";
+}
+
+/**
  * Generate a unique 16-character hex UID for web chat users
  * 
  * @return string 16-character hex UID
