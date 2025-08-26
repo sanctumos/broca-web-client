@@ -495,3 +495,145 @@ class TestAPICleanupHandling:
                             assert response.status_code == 200
                         else:
                             assert response[1] == 200
+
+    # Direct route tests to cover lines 40-70
+    def test_handle_messages_direct_route(self, app, db_manager):
+        """Test direct route for messages to cover line 68"""
+        # Create a test session first
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_sessions (id, last_active) 
+            VALUES ('session_test_123', datetime('now'))
+        """)
+        conn.commit()
+        
+        # Verify the session was created
+        cursor.execute("SELECT * FROM web_chat_sessions WHERE id = 'session_test_123'")
+        session = cursor.fetchone()
+        print(f"Created session: {session}")
+        
+        conn.close()
+        
+        with app.test_client() as client:
+            response = client.post('/api/v1/messages', 
+                                json={'session_id': 'session_test_123', 'message': 'test message'})
+            print(f"Response status: {response.status_code}")
+            print(f"Response data: {response.get_json()}")
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_inbox_direct_route(self, app, db_manager):
+        """Test direct route for inbox to cover line 73"""
+        # Create a test session and message first
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_sessions (id, last_active) 
+            VALUES ('session_test_456', datetime('now'))
+        """)
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_messages (session_id, message, timestamp) 
+            VALUES ('session_test_456', 'test message', datetime('now'))
+        """)
+        conn.commit()
+        conn.close()
+        
+        with app.test_client() as client:
+            response = client.get('/api/v1/inbox', 
+                               headers={'Authorization': 'Bearer test_api_key_123'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_outbox_direct_route(self, app, db_manager):
+        """Test direct route for outbox to cover line 78"""
+        # Create a test session and message first
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_sessions (id, last_active) 
+            VALUES ('session_test_789', datetime('now'))
+        """)
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_messages (session_id, message, timestamp) 
+            VALUES ('session_test_789', 'test message', datetime('now'))
+        """)
+        conn.commit()
+        conn.close()
+        
+        with app.test_client() as client:
+            response = client.post('/api/v1/outbox', 
+                                json={'session_id': 'session_test_789', 'response': 'test response'},
+                                headers={'Authorization': 'Bearer test_api_key_123'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_responses_direct_route(self, app, db_manager):
+        """Test direct route for responses to cover line 83"""
+        # Create a test session and response first
+        conn = db_manager.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_sessions (id, last_active) 
+            VALUES ('session_test_resp', datetime('now'))
+        """)
+        cursor.execute("""
+            INSERT OR REPLACE INTO web_chat_responses (session_id, response, message_id, timestamp) 
+            VALUES ('session_test_resp', 'test response', 1, datetime('now'))
+        """)
+        conn.commit()
+        conn.close()
+        
+        with app.test_client() as client:
+            response = client.get('/api/v1/responses?session_id=session_test_resp')
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_sessions_direct_route(self, app):
+        """Test direct route for sessions to cover line 88"""
+        with app.test_client() as client:
+            response = client.get('/api/v1/sessions', 
+                               headers={'Authorization': 'Bearer test_admin_key_456'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_config_direct_route(self, app):
+        """Test direct route for config to cover line 93"""
+        with app.test_client() as client:
+            response = client.get('/api/v1/config', 
+                               headers={'Authorization': 'Bearer test_admin_key_456'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_cleanup_direct_route(self, app):
+        """Test direct route for cleanup to cover line 98"""
+        with app.test_client() as client:
+            response = client.post('/api/v1/cleanup', 
+                                headers={'Authorization': 'Bearer test_admin_key_456'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_clear_data_direct_route(self, app):
+        """Test direct route for clear_data to cover line 103"""
+        with app.test_client() as client:
+            response = client.post('/api/v1/clear_data', 
+                                headers={'Authorization': 'Bearer test_admin_key_456'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
+    
+    def test_handle_cleanup_logs_direct_route(self, app):
+        """Test direct route for cleanup_logs to cover line 108"""
+        with app.test_client() as client:
+            response = client.post('/api/v1/cleanup_logs', 
+                                headers={'Authorization': 'Bearer test_admin_key_456'})
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data['success'] is True
