@@ -1,0 +1,45 @@
+{
+    "name": "sanctum-web-chat/php-widget",
+    "description": "PHP Web Widget for Sanctum Chat System",
+    "type": "project",
+    "license": "CC-BY-SA-4.0",
+    "authors": [
+        {
+            "name": "Sanctum Web Chat Team",
+            "email": "dev@sanctum-chat.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "phpunit/php-code-coverage": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SanctumChat\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite=\"Widget Unit Tests\"",
+        "test:integration": "phpunit --testsuite=\"Widget Integration Tests\"",
+        "test:e2e": "phpunit --testsuite=\"Widget E2E Tests\"",
+        "test:coverage": "phpunit --coverage-html tests/coverage --coverage-text=tests/coverage.txt",
+        "test:coverage:unit": "phpunit --testsuite=\"Widget Unit Tests\" --coverage-html tests/coverage/unit --coverage-text=tests/coverage-unit.txt",
+        "test:coverage:integration": "phpunit --testsuite=\"Widget Integration Tests\" --coverage-html tests/coverage/integration --coverage-text=tests/coverage-integration.txt",
+        "test:coverage:e2e": "phpunit --testsuite=\"Widget E2E Tests\" --coverage-html tests/coverage/e2e --coverage-text=tests/coverage-e2e.txt"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
