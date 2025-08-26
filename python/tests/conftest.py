@@ -54,9 +54,26 @@ def test_db():
     """Create test database with sample data"""
     db_path = 'test_web_chat_bridge.db'
     
-    # Clean up any existing test database
+    # Clean up any existing test database with retry logic for Windows
     if os.path.exists(db_path):
-        os.remove(db_path)
+        for attempt in range(3):
+            try:
+                os.remove(db_path)
+                break  # Successfully removed
+            except PermissionError:
+                if attempt < 2:  # Not the last attempt
+                    import time
+                    time.sleep(0.5)  # Wait before retry
+                else:
+                    # Final attempt failed, try to use a different filename
+                    import uuid
+                    db_path = f'test_web_chat_bridge_{uuid.uuid4().hex[:8]}.db'
+                    break
+            except OSError:
+                # Other OS errors, try to use a different filename
+                import uuid
+                db_path = f'test_web_chat_bridge_{uuid.uuid4().hex[:8]}.db'
+                break
     
     # Create fresh test database using the application's DatabaseManager
     from app.utils.database import DatabaseManager
@@ -109,17 +126,25 @@ def test_db():
     
     yield db_path
     
-    # Cleanup - add delay to ensure connections are fully closed
+    # Cleanup - add longer delay and better error handling for Windows
     import time
-    time.sleep(0.1)  # Small delay to ensure SQLite connections are closed
+    time.sleep(0.5)  # Longer delay to ensure SQLite connections are fully closed
     
-    # Try to remove the file, but don't fail if it's still locked
-    try:
-        if os.path.exists(db_path):
-            os.remove(db_path)
-    except PermissionError:
-        # File might still be locked, that's okay for tests
-        pass
+    # Try to remove the file multiple times with increasing delays
+    for attempt in range(3):
+        try:
+            if os.path.exists(db_path):
+                os.remove(db_path)
+                break  # Successfully removed
+        except PermissionError:
+            if attempt < 2:  # Not the last attempt
+                time.sleep(1.0)  # Wait longer before retry
+            else:
+                # Final attempt failed, that's okay for tests
+                pass
+        except OSError:
+            # Other OS errors, that's okay for tests
+            pass
 
 @pytest.fixture(scope="function")
 def db_manager(test_db):

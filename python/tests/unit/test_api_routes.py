@@ -507,19 +507,11 @@ class TestAPICleanupHandling:
             VALUES ('session_test_123', datetime('now'))
         """)
         conn.commit()
-        
-        # Verify the session was created
-        cursor.execute("SELECT * FROM web_chat_sessions WHERE id = 'session_test_123'")
-        session = cursor.fetchone()
-        print(f"Created session: {session}")
-        
         conn.close()
         
         with app.test_client() as client:
             response = client.post('/api/v1/messages', 
                                 json={'session_id': 'session_test_123', 'message': 'test message'})
-            print(f"Response status: {response.status_code}")
-            print(f"Response data: {response.get_json()}")
             assert response.status_code == 200
             data = response.get_json()
             assert data['success'] is True
