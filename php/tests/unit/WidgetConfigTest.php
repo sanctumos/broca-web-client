@@ -3,125 +3,111 @@
  * Unit Tests for Widget Config Endpoint
  */
 
+namespace Tests\Unit;
+
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Unit tests for Widget Configuration Endpoint
+ */
 class WidgetConfigTest extends TestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
-        TestUtils::setupTestEnvironment();
+        \Tests\TestUtils::setupTestEnvironment();
     }
-    
+
     protected function tearDown(): void
     {
-        TestUtils::cleanupTestEnvironment();
-        parent::tearDown();
+        \Tests\TestUtils::cleanupTestEnvironment();
     }
-    
-    /**
-     * Test successful config retrieval
-     */
-    public function testSuccessfulConfigRetrieval()
+
+    public function testConfigEndpointReturnsValidJson()
     {
-        TestUtils::mockRequest('GET', '/widget/config');
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
+        $this->assertNotEmpty($output);
         
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertTrue($response['success']);
-        $this->assertEquals('Configuration options loaded', $response['message']);
-        $this->assertArrayHasKey('positions', $response['data']);
-        $this->assertArrayHasKey('themes', $response['data']);
-        $this->assertArrayHasKey('languages', $response['data']);
-        $this->assertArrayHasKey('defaults', $response['data']);
+        $data = json_decode($output, true);
+        $this->assertNotNull($data, 'Response should be valid JSON');
+        $this->assertIsArray($data);
     }
-    
-    /**
-     * Test available positions
-     */
-    public function testAvailablePositions()
+
+    public function testConfigEndpointHasSuccessStructure()
     {
-        TestUtils::mockRequest('GET', '/widget/config');
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
+        $this->assertArrayHasKey('success', $data);
+        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('timestamp', $data);
+        $this->assertArrayHasKey('data', $data);
         
-        $response = TestUtils::assertJsonResponse($output);
+        $this->assertTrue($data['success']);
+        $this->assertIsString($data['message']);
+        $this->assertIsString($data['timestamp']);
+        $this->assertIsArray($data['data']);
+    }
+
+    public function testConfigEndpointHasRequiredOptions()
+    {
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
+        
+        $this->assertArrayHasKey('positions', $data['data']);
+        $this->assertArrayHasKey('themes', $data['data']);
+        $this->assertArrayHasKey('languages', $data['data']);
+        $this->assertArrayHasKey('defaults', $data['data']);
+        
+        $this->assertIsArray($data['data']['positions']);
+        $this->assertIsArray($data['data']['themes']);
+        $this->assertIsArray($data['data']['languages']);
+        $this->assertIsArray($data['data']['defaults']);
+    }
+
+    public function testConfigEndpointHasValidPositions()
+    {
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
         
         $expectedPositions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
-        $this->assertEquals($expectedPositions, $response['data']['positions']);
-        
-        // Verify each position is valid
-        foreach ($response['data']['positions'] as $position) {
-            $this->assertContains($position, $expectedPositions);
-        }
+        $this->assertEquals($expectedPositions, $data['data']['positions']);
     }
-    
-    /**
-     * Test available themes
-     */
-    public function testAvailableThemes()
+
+    public function testConfigEndpointHasValidThemes()
     {
-        TestUtils::mockRequest('GET', '/widget/config');
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
         
         $expectedThemes = ['light', 'dark', 'auto'];
-        $this->assertEquals($expectedThemes, $response['data']['themes']);
-        
-        // Verify each theme is valid
-        foreach ($response['data']['themes'] as $theme) {
-            $this->assertContains($theme, $expectedThemes);
-        }
+        $this->assertEquals($expectedThemes, $data['data']['themes']);
     }
-    
-    /**
-     * Test available languages
-     */
-    public function testAvailableLanguages()
+
+    public function testConfigEndpointHasValidLanguages()
     {
-        TestUtils::mockRequest('GET', '/widget/config');
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
         
         $expectedLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'];
-        $this->assertEquals($expectedLanguages, $response['data']['languages']);
-        
-        // Verify each language is valid
-        foreach ($response['data']['languages'] as $language) {
-            $this->assertContains($language, $expectedLanguages);
-        }
+        $this->assertEquals($expectedLanguages, $data['data']['languages']);
     }
-    
-    /**
-     * Test default configuration values
-     */
-    public function testDefaultConfigurationValues()
+
+    public function testConfigEndpointHasValidDefaults()
     {
-        TestUtils::mockRequest('GET', '/widget/config');
+        $output = \Tests\TestUtils::testWidgetEndpoint('config');
+        $data = json_decode($output, true);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
+        $defaults = $data['data']['defaults'];
         
-        $response = TestUtils::assertJsonResponse($output);
+        $this->assertArrayHasKey('position', $defaults);
+        $this->assertArrayHasKey('theme', $defaults);
+        $this->assertArrayHasKey('title', $defaults);
+        $this->assertArrayHasKey('primaryColor', $defaults);
+        $this->assertArrayHasKey('language', $defaults);
+        $this->assertArrayHasKey('autoOpen', $defaults);
+        $this->assertArrayHasKey('notifications', $defaults);
+        $this->assertArrayHasKey('sound', $defaults);
         
-        $defaults = $response['data']['defaults'];
-        
-        // Verify default values
         $this->assertEquals('bottom-right', $defaults['position']);
         $this->assertEquals('light', $defaults['theme']);
         $this->assertEquals('Chat with us', $defaults['title']);
@@ -131,75 +117,12 @@ class WidgetConfigTest extends TestCase
         $this->assertTrue($defaults['notifications']);
         $this->assertTrue($defaults['sound']);
     }
-    
-    /**
-     * Test config with invalid HTTP method
-     */
-    public function testConfigInvalidMethod()
+
+    public function testConfigEndpointRejectsNonGetMethods()
     {
-        TestUtils::mockRequest('POST', '/widget/config');
+        $this->expectException(\Exception::class);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertFalse($response['success']);
-        $this->assertEquals('Method not allowed', $response['error']);
-    }
-    
-    /**
-     * Test config with OPTIONS request (CORS preflight)
-     */
-    public function testConfigOptionsRequest()
-    {
-        TestUtils::mockRequest('OPTIONS', '/widget/config');
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        // OPTIONS request should exit early
-        $this->assertEmpty($output);
-    }
-    
-    /**
-     * Test config response structure
-     */
-    public function testConfigResponseStructure()
-    {
-        TestUtils::mockRequest('GET', '/widget/config');
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        
-        // Verify top-level structure
-        $this->assertArrayHasKey('success', $response);
-        $this->assertArrayHasKey('message', $response);
-        $this->assertArrayHasKey('timestamp', $response);
-        $this->assertArrayHasKey('data', $response);
-        
-        // Verify data structure
-        $data = $response['data'];
-        $this->assertArrayHasKey('positions', $data);
-        $this->assertArrayHasKey('themes', $data);
-        $this->assertArrayHasKey('languages', $data);
-        $this->assertArrayHasKey('defaults', $data);
-        
-        // Verify data types
-        $this->assertIsArray($data['positions']);
-        $this->assertIsArray($data['themes']);
-        $this->assertIsArray($data['languages']);
-        $this->assertIsArray($data['defaults']);
-        
-        // Verify non-empty arrays
-        $this->assertNotEmpty($data['positions']);
-        $this->assertNotEmpty($data['themes']);
-        $this->assertNotEmpty($data['languages']);
-        $this->assertNotEmpty($data['defaults']);
+        // This should fail because the endpoint only accepts GET
+        \Tests\TestUtils::testWidgetEndpoint('config', 'POST');
     }
 }

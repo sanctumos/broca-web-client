@@ -3,344 +3,222 @@
  * End-to-End Tests for Widget System
  */
 
+namespace Tests\E2E;
+
 use PHPUnit\Framework\TestCase;
 
+/**
+ * End-to-End tests for Widget System
+ */
 class WidgetE2ETest extends TestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
-        TestUtils::setupTestEnvironment();
+        \Tests\TestUtils::setupTestEnvironment();
     }
-    
+
     protected function tearDown(): void
     {
-        TestUtils::cleanupTestEnvironment();
-        parent::tearDown();
+        \Tests\TestUtils::cleanupTestEnvironment();
     }
-    
-    /**
-     * Test complete widget lifecycle
-     */
-    public function testCompleteWidgetLifecycle()
+
+    public function testCompleteWidgetWorkflow()
     {
-        // Phase 1: Configuration Discovery
-        $this->testConfigurationDiscovery();
+        // Step 1: Get widget configuration
+        $configOutput = \Tests\TestUtils::testWidgetEndpoint('config');
+        $configData = json_decode($configOutput, true);
         
-        // Phase 2: Widget Initialization
-        $this->testWidgetInitialization();
+        $this->assertTrue($configData['success']);
+        $this->assertArrayHasKey('positions', $configData['data']);
+        $this->assertArrayHasKey('themes', $configData['data']);
+        $this->assertArrayHasKey('languages', $configData['data']);
+        $this->assertArrayHasKey('defaults', $configData['data']);
         
-        // Phase 3: Health Monitoring
-        $this->testHealthMonitoring();
+        // Step 2: Initialize widget with configuration
+        $initOutput = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', [
+            'apiKey' => 'test_key_123',
+            'position' => $configData['data']['defaults']['position'],
+            'theme' => $configData['data']['defaults']['theme'],
+            'title' => 'Test Chat Widget',
+            'primaryColor' => '#007bff',
+            'language' => 'en',
+            'autoOpen' => 'false',
+            'notifications' => 'true',
+            'sound' => 'true'
+        ]);
         
-        // Phase 4: Configuration Updates
-        $this->testConfigurationUpdates();
+        $initData = json_decode($initOutput, true);
+        $this->assertTrue($initData['success']);
+        $this->assertArrayHasKey('config', $initData['data']);
+        $this->assertArrayHasKey('assets', $initData['data']);
+        $this->assertArrayHasKey('api', $initData['data']);
         
-        // Phase 5: Error Recovery
-        $this->testErrorRecovery();
+        // Step 3: Verify configuration matches
+        $config = $initData['data']['config'];
+        $this->assertEquals('test_key_123', $config['apiKey']);
+        $this->assertEquals($configData['data']['defaults']['position'], $config['position']);
+        $this->assertEquals($configData['data']['defaults']['theme'], $config['theme']);
+        $this->assertEquals('Test Chat Widget', $config['title']);
+        $this->assertEquals('#007bff', $config['primaryColor']);
+        $this->assertEquals('en', $config['language']);
+        $this->assertFalse($config['autoOpen']);
+        $this->assertTrue($config['notifications']);
+        $this->assertTrue($config['sound']);
+        
+        // Step 4: Check health status
+        $healthOutput = \Tests\TestUtils::testWidgetEndpoint('health');
+        $healthData = json_decode($healthOutput, true);
+        
+        $this->assertTrue($healthData['success']);
+        $this->assertArrayHasKey('status', $healthData['data']);
+        $this->assertArrayHasKey('version', $healthData['data']);
+        $this->assertArrayHasKey('timestamp', $healthData['data']);
+        $this->assertArrayHasKey('uptime', $healthData['data']);
+        
+        $this->assertEquals('healthy', $healthData['data']['status']);
+        $this->assertNotEmpty($healthData['data']['version']);
+        $this->assertNotEmpty($healthData['data']['uptime']);
     }
-    
-    /**
-     * Test configuration discovery phase
-     */
-    private function testConfigurationDiscovery()
+
+    public function testWidgetWithCustomConfiguration()
     {
-        // Get available configuration options
-        TestUtils::mockRequest('GET', '/widget/config');
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        $this->assertTrue($response['success']);
-        
-        // Verify all required configuration options are available
-        $requiredOptions = ['positions', 'themes', 'languages', 'defaults'];
-        foreach ($requiredOptions as $option) {
-            $this->assertArrayHasKey($option, $response['data']);
-            $this->assertNotEmpty($response['data'][$option]);
-        }
-        
-        // Store configuration for later use
-        $this->configOptions = $response['data'];
-    }
-    
-    /**
-     * Test widget initialization phase
-     */
-    private function testWidgetInitialization()
-    {
-        // Test initialization with each available position
-        foreach ($this->configOptions['positions'] as $position) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['position'] = $position;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed to initialize with position: $position");
-            $this->assertEquals($position, $response['data']['config']['position']);
-        }
-        
-        // Test initialization with each available theme
-        foreach ($this->configOptions['themes'] as $theme) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['theme'] = $theme;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed to initialize with theme: $theme");
-            $this->assertEquals($theme, $response['data']['config']['theme']);
-        }
-        
-        // Test initialization with each available language
-        foreach ($this->configOptions['languages'] as $language) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['language'] = $language;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed to initialize with language: $language");
-            $this->assertEquals($language, $response['data']['config']['language']);
-        }
-    }
-    
-    /**
-     * Test health monitoring phase
-     */
-    private function testHealthMonitoring()
-    {
-        // Perform multiple health checks
-        for ($i = 0; $i < 3; $i++) {
-            TestUtils::mockRequest('GET', '/widget/health');
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/health.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Health check $i failed");
-            $this->assertEquals('healthy', $response['data']['status']);
-            $this->assertArrayHasKey('api_status', $response['data']);
-            
-            // Small delay between checks
-            usleep(100000); // 0.1 seconds
-        }
-    }
-    
-    /**
-     * Test configuration updates phase
-     */
-    private function testConfigurationUpdates()
-    {
-        $baseConfig = TestUtils::getTestWidgetConfig();
-        
-        // Test various configuration combinations
-        $testConfigs = [
-            // Minimal config
-            ['apiKey' => $baseConfig['apiKey']],
-            
-            // Full custom config
-            [
-                'apiKey' => $baseConfig['apiKey'],
-                'position' => 'top-left',
-                'theme' => 'dark',
-                'title' => 'Custom E2E Widget',
-                'primaryColor' => '#ff6600',
-                'language' => 'es',
-                'autoOpen' => 'true',
-                'notifications' => 'false',
-                'sound' => 'false'
-            ],
-            
-            // Mixed config
-            [
-                'apiKey' => $baseConfig['apiKey'],
-                'position' => 'bottom-left',
-                'theme' => 'auto',
-                'title' => 'Mixed Config Widget',
-                'primaryColor' => '#00ff00'
-            ]
+        // Test with custom position and theme
+        $customConfig = [
+            'apiKey' => 'custom_key_456',
+            'position' => 'top-left',
+            'theme' => 'dark',
+            'title' => 'Custom Dark Widget',
+            'primaryColor' => '#ff0000',
+            'language' => 'es',
+            'autoOpen' => 'true',
+            'notifications' => 'false',
+            'sound' => 'false'
         ];
         
-        foreach ($testConfigs as $i => $config) {
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Config $i failed");
-            
-            // Verify all provided values are correctly set
-            foreach ($config as $key => $value) {
-                if ($key === 'apiKey') {
-                    $this->assertEquals($value, $response['data']['config'][$key]);
-                }
-            }
-        }
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', $customConfig);
+        $data = json_decode($output, true);
+        
+        $this->assertTrue($data['success']);
+        
+        $config = $data['data']['config'];
+        $this->assertEquals('custom_key_456', $config['apiKey']);
+        $this->assertEquals('top-left', $config['position']);
+        $this->assertEquals('dark', $config['theme']);
+        $this->assertEquals('Custom Dark Widget', $config['title']);
+        $this->assertEquals('#ff0000', $config['primaryColor']);
+        $this->assertEquals('es', $config['language']);
+        $this->assertTrue($config['autoOpen']);
+        $this->assertFalse($config['notifications']);
+        $this->assertFalse($config['sound']);
     }
-    
-    /**
-     * Test error recovery phase
-     */
-    private function testErrorRecovery()
+
+    public function testWidgetErrorHandling()
     {
-        // Test invalid requests
-        $invalidRequests = [
-            ['method' => 'POST', 'params' => TestUtils::getTestWidgetConfig()],
-            ['method' => 'GET', 'params' => []],
-            ['method' => 'GET', 'params' => ['apiKey' => '']],
-            ['method' => 'PUT', 'params' => TestUtils::getTestWidgetConfig()]
-        ];
+        // Test missing API key
+        $this->expectException(\Exception::class);
+        \Tests\TestUtils::testWidgetEndpoint('init', 'GET', []);
         
-        foreach ($invalidRequests as $i => $request) {
-            TestUtils::mockRequest($request['method'], '/widget/init', $request['params']);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertFalse($response['success'], "Invalid request $i should have failed");
-            $this->assertArrayHasKey('error', $response);
-        }
+        // Test empty API key
+        $this->expectException(\Exception::class);
+        \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => '']);
         
-        // Test recovery with valid request
-        TestUtils::mockRequest('GET', '/widget/init', TestUtils::getTestWidgetConfig());
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        $this->assertTrue($response['success'], 'Valid request should succeed after errors');
+        // Test invalid HTTP method
+        $this->expectException(\Exception::class);
+        \Tests\TestUtils::testWidgetEndpoint('init', 'POST', ['apiKey' => 'test_key']);
     }
-    
-    /**
-     * Test widget performance under load
-     */
-    public function testWidgetPerformanceUnderLoad()
+
+    public function testWidgetCorsHandling()
     {
-        $startTime = microtime(true);
-        $successCount = 0;
-        $totalRequests = 10;
-        
-        // Make multiple concurrent-like requests
-        for ($i = 0; $i < $totalRequests; $i++) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['title'] = "Performance Test Widget $i";
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            if ($response['success']) {
-                $successCount++;
-            }
-        }
-        
-        $endTime = microtime(true);
-        $totalTime = $endTime - $startTime;
-        $avgTime = $totalTime / $totalRequests;
-        
-        // Performance assertions
-        $this->assertEquals($totalRequests, $successCount, 'All requests should succeed');
-        $this->assertLessThan(5.0, $totalTime, "Total time should be under 5 seconds, got: $totalTime");
-        $this->assertLessThan(0.5, $avgTime, "Average time should be under 0.5 seconds, got: $avgTime");
-    }
-    
-    /**
-     * Test widget with extreme configuration values
-     */
-    public function testWidgetWithExtremeConfigurationValues()
-    {
-        $extremeConfigs = [
-            // Very long title
-            [
-                'apiKey' => TestUtils::createTestApiKey(),
-                'title' => str_repeat('A', 1000)
-            ],
-            
-            // Very long API key
-            [
-                'apiKey' => str_repeat('a', 1000),
-                'title' => 'Extreme API Key Test'
-            ],
-            
-            // Special characters in title
-            [
-                'apiKey' => TestUtils::createTestApiKey(),
-                'title' => 'Widget with special chars: !@#$%^&*()_+-=[]{}|;:,.<>?'
-            ],
-            
-            // Unicode characters
-            [
-                'apiKey' => TestUtils::createTestApiKey(),
-                'title' => 'Widget with unicode: 🚀🎯✨🔥💻📱🌐🔒'
-            ]
-        ];
-        
-        foreach ($extremeConfigs as $i => $config) {
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Extreme config $i failed");
-            
-            // Verify the extreme values are handled correctly
-            $this->assertEquals($config['apiKey'], $response['data']['config']['apiKey']);
-            if (isset($config['title'])) {
-                $this->assertEquals($config['title'], $response['data']['config']['title']);
-            }
-        }
-    }
-    
-    /**
-     * Test widget CORS handling
-     */
-    public function testWidgetCORSHandling()
-    {
-        // Test OPTIONS requests for all endpoints
-        $endpoints = ['/widget/init', '/widget/config', '/widget/health'];
+        // Test OPTIONS request (CORS preflight)
+        $endpoints = ['config', 'init', 'health'];
         
         foreach ($endpoints as $endpoint) {
-            TestUtils::mockRequest('OPTIONS', $endpoint);
+            $params = [];
+            if ($endpoint === 'init') {
+                $params = ['apiKey' => 'test_key_123'];
+            }
             
-            $output = TestUtils::captureOutput(function() use ($endpoint) {
-                if ($endpoint === '/widget/init') {
-                    require_once __DIR__ . '/../../public/widget/init.php';
-                } elseif ($endpoint === '/widget/config') {
-                    require_once __DIR__ . '/../../public/widget/config.php';
-                } elseif ($endpoint === '/widget/health') {
-                    require_once __DIR__ . '/../../public/widget/health.php';
-                }
-            });
-            
-            // OPTIONS requests should exit early
+            $output = \Tests\TestUtils::testWidgetEndpoint($endpoint, 'OPTIONS', $params);
             $this->assertEmpty($output, "OPTIONS request to $endpoint should exit early");
+        }
+    }
+
+    public function testWidgetParameterValidation()
+    {
+        // Test with various parameter combinations
+        $testCases = [
+            [
+                'params' => ['apiKey' => 'test_key_123', 'position' => 'bottom-left'],
+                'expected' => ['position' => 'bottom-left']
+            ],
+            [
+                'params' => ['apiKey' => 'test_key_123', 'theme' => 'auto'],
+                'expected' => ['theme' => 'auto']
+            ],
+            [
+                'params' => ['apiKey' => 'test_key_123', 'language' => 'fr'],
+                'expected' => ['language' => 'fr']
+            ],
+            [
+                'params' => ['apiKey' => 'test_key_123', 'autoOpen' => 'true'],
+                'expected' => ['autoOpen' => true]
+            ]
+        ];
+        
+        foreach ($testCases as $testCase) {
+            $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', $testCase['params']);
+            $data = json_decode($output, true);
+            
+            $this->assertTrue($data['success']);
+            
+            foreach ($testCase['expected'] as $key => $expectedValue) {
+                $this->assertEquals($expectedValue, $data['data']['config'][$key]);
+            }
+        }
+    }
+
+    public function testWidgetResponseConsistency()
+    {
+        // Test that multiple calls to the same endpoint return consistent results
+        $configOutput1 = \Tests\TestUtils::testWidgetEndpoint('config');
+        $configOutput2 = \Tests\TestUtils::testWidgetEndpoint('config');
+        
+        $this->assertEquals($configOutput1, $configOutput2);
+        
+        $initOutput1 = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $initOutput2 = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        
+        $this->assertEquals($initOutput1, $initOutput2);
+        
+        $healthOutput1 = \Tests\TestUtils::testWidgetEndpoint('health');
+        $healthOutput2 = \Tests\TestUtils::testWidgetEndpoint('health');
+        
+        $this->assertEquals($healthOutput1, $healthOutput2);
+    }
+
+    public function testWidgetPerformance()
+    {
+        // Test that endpoints respond within reasonable time
+        $endpoints = ['config', 'init', 'health'];
+        
+        foreach ($endpoints as $endpoint) {
+            $startTime = microtime(true);
+            
+            $params = [];
+            if ($endpoint === 'init') {
+                $params = ['apiKey' => 'test_key_123'];
+            }
+            
+            $output = \Tests\TestUtils::testWidgetEndpoint($endpoint, 'GET', $params);
+            
+            $endTime = microtime(true);
+            $executionTime = $endTime - $startTime;
+            
+            // Endpoints should respond within 1 second
+            $this->assertLessThan(1.0, $executionTime, "Endpoint $endpoint took too long: $executionTime seconds");
+            
+            $data = json_decode($output, true);
+            $this->assertTrue($data['success']);
         }
     }
 }

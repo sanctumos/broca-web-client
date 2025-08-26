@@ -4,8 +4,8 @@
  * Return available widget configuration options
  */
 
-require_once '../config/settings.php';
-require_once '../includes/api_response.php';
+require_once __DIR__ . '/../config/settings.php';
+require_once __DIR__ . '/../includes/api_response.php';
 
 set_cors_headers();
 

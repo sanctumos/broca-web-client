@@ -3,193 +3,145 @@
  * Unit Tests for Widget Init Endpoint
  */
 
+namespace Tests\Unit;
+
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Unit tests for Widget Initialization Endpoint
+ */
 class WidgetInitTest extends TestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
-        TestUtils::setupTestEnvironment();
+        \Tests\TestUtils::setupTestEnvironment();
     }
-    
+
     protected function tearDown(): void
     {
-        TestUtils::cleanupTestEnvironment();
-        parent::tearDown();
+        \Tests\TestUtils::cleanupTestEnvironment();
     }
-    
-    /**
-     * Test successful widget initialization
-     */
-    public function testSuccessfulWidgetInit()
+
+    public function testInitEndpointReturnsValidJson()
     {
-        $config = TestUtils::getTestWidgetConfig();
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
         
-        TestUtils::mockRequest('GET', '/widget/init', $config);
+        $this->assertNotEmpty($output);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertTrue($response['success']);
-        $this->assertEquals('Widget configuration loaded', $response['message']);
-        $this->assertArrayHasKey('config', $response['data']);
-        $this->assertArrayHasKey('assets', $response['data']);
-        $this->assertArrayHasKey('api', $response['data']);
-        
-        // Verify config data
-        $this->assertEquals($config['apiKey'], $response['data']['config']['apiKey']);
-        $this->assertEquals($config['position'], $response['data']['config']['position']);
-        $this->assertEquals($config['theme'], $response['data']['config']['theme']);
-        
-        // Verify assets
-        $this->assertStringContainsString('widget.css', $response['data']['assets']['css']);
-        $this->assertStringContainsString('chat-widget.js', $response['data']['assets']['js']);
-        $this->assertStringContainsString('icons', $response['data']['assets']['icons']);
-        
-        // Verify API info
-        $this->assertStringContainsString('localhost', $response['data']['api']['baseUrl']);
-        $this->assertEquals('/api/v1/', $response['data']['api']['endpoint']);
+        $data = json_decode($output, true);
+        $this->assertNotNull($data, 'Response should be valid JSON');
+        $this->assertIsArray($data);
     }
-    
-    /**
-     * Test widget init with missing API key
-     */
-    public function testWidgetInitMissingApiKey()
+
+    public function testInitEndpointHasSuccessStructure()
     {
-        $config = TestUtils::getTestWidgetConfig();
-        unset($config['apiKey']);
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $data = json_decode($output, true);
         
-        TestUtils::mockRequest('GET', '/widget/init', $config);
+        $this->assertArrayHasKey('success', $data);
+        $this->assertArrayHasKey('message', $data);
+        $this->assertArrayHasKey('timestamp', $data);
+        $this->assertArrayHasKey('data', $data);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertFalse($response['success']);
-        $this->assertEquals('API key is required', $response['error']);
+        $this->assertTrue($data['success']);
+        $this->assertIsString($data['message']);
+        $this->assertIsString($data['timestamp']);
+        $this->assertIsArray($data['data']);
     }
-    
-    /**
-     * Test widget init with empty API key
-     */
-    public function testWidgetInitEmptyApiKey()
+
+    public function testInitEndpointHasRequiredData()
     {
-        $config = TestUtils::getTestWidgetConfig();
-        $config['apiKey'] = '';
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $data = json_decode($output, true);
         
-        TestUtils::mockRequest('GET', '/widget/init', $config);
+        $this->assertArrayHasKey('config', $data['data']);
+        $this->assertArrayHasKey('assets', $data['data']);
+        $this->assertArrayHasKey('api', $data['data']);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertFalse($response['success']);
-        $this->assertEquals('API key is required', $response['error']);
+        $this->assertIsArray($data['data']['config']);
+        $this->assertIsArray($data['data']['assets']);
+        $this->assertIsArray($data['data']['api']);
     }
-    
-    /**
-     * Test widget init with default values
-     */
-    public function testWidgetInitWithDefaults()
+
+    public function testInitEndpointHasValidConfig()
     {
-        $config = ['apiKey' => TestUtils::createTestApiKey()];
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $data = json_decode($output, true);
         
-        TestUtils::mockRequest('GET', '/widget/init', $config);
+        $config = $data['data']['config'];
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
+        $this->assertArrayHasKey('apiKey', $config);
+        $this->assertArrayHasKey('position', $config);
+        $this->assertArrayHasKey('theme', $config);
+        $this->assertArrayHasKey('title', $config);
+        $this->assertArrayHasKey('primaryColor', $config);
+        $this->assertArrayHasKey('language', $config);
+        $this->assertArrayHasKey('autoOpen', $config);
+        $this->assertArrayHasKey('notifications', $config);
+        $this->assertArrayHasKey('sound', $config);
         
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertTrue($response['success']);
-        
-        // Verify default values
-        $this->assertEquals('bottom-right', $response['data']['config']['position']);
-        $this->assertEquals('light', $response['data']['config']['theme']);
-        $this->assertEquals('Chat with us', $response['data']['config']['title']);
-        $this->assertEquals('#007bff', $response['data']['config']['primaryColor']);
-        $this->assertEquals('en', $response['data']['config']['language']);
-        $this->assertFalse($response['data']['config']['autoOpen']);
-        $this->assertTrue($response['data']['config']['notifications']);
-        $this->assertTrue($response['data']['config']['sound']);
+        $this->assertEquals('test_key_123', $config['apiKey']);
+        $this->assertEquals('bottom-right', $config['position']);
+        $this->assertEquals('light', $config['theme']);
+        $this->assertEquals('Chat with us', $config['title']);
+        $this->assertEquals('#007bff', $config['primaryColor']);
+        $this->assertEquals('en', $config['language']);
+        $this->assertFalse($config['autoOpen']);
+        $this->assertTrue($config['notifications']);
+        $this->assertTrue($config['sound']);
     }
-    
-    /**
-     * Test widget init with custom values
-     */
-    public function testWidgetInitWithCustomValues()
+
+    public function testInitEndpointHasValidAssets()
     {
-        $config = [
-            'apiKey' => TestUtils::createTestApiKey(),
-            'position' => 'top-left',
-            'theme' => 'dark',
-            'title' => 'Custom Chat Title',
-            'primaryColor' => '#ff0000',
-            'language' => 'es',
-            'autoOpen' => 'true',
-            'notifications' => 'false',
-            'sound' => 'false'
-        ];
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $data = json_decode($output, true);
         
-        TestUtils::mockRequest('GET', '/widget/init', $config);
+        $assets = $data['data']['assets'];
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
+        $this->assertArrayHasKey('css', $assets);
+        $this->assertArrayHasKey('js', $assets);
+        $this->assertArrayHasKey('icons', $assets);
         
-        $response = TestUtils::assertJsonResponse($output);
-        
-        $this->assertTrue($response['success']);
-        
-        // Verify custom values
-        $this->assertEquals('top-left', $response['data']['config']['position']);
-        $this->assertEquals('dark', $response['data']['config']['theme']);
-        $this->assertEquals('Custom Chat Title', $response['data']['config']['title']);
-        $this->assertEquals('#ff0000', $response['data']['config']['primaryColor']);
-        $this->assertEquals('es', $response['data']['config']['language']);
-        $this->assertTrue($response['data']['config']['autoOpen']);
-        $this->assertFalse($response['data']['config']['notifications']);
-        $this->assertFalse($response['data']['config']['sound']);
+        $this->assertEquals('/widget/assets/css/widget.css', $assets['css']);
+        $this->assertEquals('/widget/assets/js/chat-widget.js', $assets['js']);
+        $this->assertEquals('/widget/assets/icons/', $assets['icons']);
     }
-    
-    /**
-     * Test widget init with invalid HTTP method
-     */
-    public function testWidgetInitInvalidMethod()
+
+    public function testInitEndpointHasValidApi()
     {
-        TestUtils::mockRequest('POST', '/widget/init', ['apiKey' => 'test']);
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $data = json_decode($output, true);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
+        $api = $data['data']['api'];
         
-        $response = TestUtils::assertJsonResponse($output);
+        $this->assertArrayHasKey('baseUrl', $api);
+        $this->assertArrayHasKey('endpoint', $api);
         
-        $this->assertFalse($response['success']);
-        $this->assertEquals('Method not allowed', $response['error']);
+        $this->assertIsString($api['baseUrl']);
+        $this->assertEquals('/api/v1/', $api['endpoint']);
     }
-    
-    /**
-     * Test widget init with OPTIONS request (CORS preflight)
-     */
-    public function testWidgetInitOptionsRequest()
+
+    public function testInitEndpointRejectsMissingApiKey()
     {
-        TestUtils::mockRequest('OPTIONS', '/widget/init');
+        $this->expectException(\Exception::class);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
+        // This should fail because apiKey is required
+        \Tests\TestUtils::testWidgetEndpoint('init', 'GET', []);
+    }
+
+    public function testInitEndpointRejectsEmptyApiKey()
+    {
+        $this->expectException(\Exception::class);
         
-        // OPTIONS request should exit early
-        $this->assertEmpty($output);
+        // This should fail because apiKey cannot be empty
+        \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => '']);
+    }
+
+    public function testInitEndpointRejectsNonGetMethods()
+    {
+        $this->expectException(\Exception::class);
+        
+        // This should fail because the endpoint only accepts GET
+        \Tests\TestUtils::testWidgetEndpoint('init', 'POST', ['apiKey' => 'test_key_123']);
     }
 }

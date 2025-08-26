@@ -28,8 +28,5 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 // Set up test database path
 $_ENV['TEST_DATABASE_PATH'] = __DIR__ . '/../test_web_chat_bridge.db';
 
-// Include test utilities
-require_once __DIR__ . '/TestUtils.php';
-
-// Set up test environment
-TestUtils::setupTestEnvironment();
+// Basic test environment setup only
+// Don't include TestUtils here to avoid any widget code execution

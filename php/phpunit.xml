@@ -6,36 +6,23 @@
          processIsolation="false"
          stopOnFailure="false"
          cacheDirectory=".phpunit.cache"
-         backupGlobals="false"
-         backupStaticAttributes="false">
+                         backupGlobals="false">
     
     <testsuites>
         <testsuite name="Widget Unit Tests">
-            <directory>tests/unit</directory>
+            <file>tests/unit/WidgetInitTest.php</file>
+            <file>tests/unit/WidgetConfigTest.php</file>
+            <file>tests/unit/WidgetHealthTest.php</file>
         </testsuite>
         <testsuite name="Widget Integration Tests">
-            <directory>tests/integration</directory>
+            <file>tests/integration/WidgetIntegrationTest.php</file>
         </testsuite>
         <testsuite name="Widget E2E Tests">
-            <directory>tests/e2e</directory>
+            <file>tests/e2e/WidgetE2ETest.php</file>
         </testsuite>
     </testsuites>
     
-    <coverage>
-        <include>
-            <directory suffix=".php">public/widget</directory>
-            <directory suffix=".php">public/includes</directory>
-            <directory suffix=".php">public/config</directory>
-        </include>
-        <exclude>
-            <directory>tests</directory>
-            <directory>vendor</directory>
-        </exclude>
-        <report>
-            <html outputDirectory="tests/coverage"/>
-            <text outputFile="tests/coverage.txt"/>
-        </report>
-    </coverage>
+    
     
     <php>
         <env name="APP_ENV" value="testing"/>
@@ -44,15 +31,5 @@
         <env name="WEB_CHAT_ADMIN_KEY" value="test_admin_key_456"/>
     </php>
     
-    <listeners>
-        <listener class="Tests\TestListener">
-            <arguments>
-                <array>
-                    <element key="logErrors" value="true"/>
-                    <element key="logNotImplemented" value="true"/>
-                    <element key="logSkipped" value="true"/>
-                </array>
-            </arguments>
-        </listener>
-    </listeners>
+    
 </phpunit>

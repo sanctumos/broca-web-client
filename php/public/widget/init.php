@@ -4,9 +4,9 @@
  * Provide widget configuration and assets
  */
 
-require_once '../config/settings.php';
-require_once '../includes/api_response.php';
-require_once '../includes/auth.php';
+require_once __DIR__ . '/../config/settings.php';
+require_once __DIR__ . '/../includes/api_response.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 // Set CORS headers
 set_cors_headers();

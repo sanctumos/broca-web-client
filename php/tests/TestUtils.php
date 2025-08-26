@@ -4,6 +4,8 @@
  * Common functions and helpers for PHP widget tests
  */
 
+namespace Tests;
+
 class TestUtils
 {
     /**
@@ -16,6 +18,16 @@ class TestUtils
         
         // Set up test data
         self::setupTestData();
+        
+        // Reset HTTP environment to prevent widget code execution
+        $_SERVER = [];
+        $_GET = [];
+        $_POST = [];
+        
+        // Ensure no output has been generated
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
     }
     
     /**
@@ -31,8 +43,8 @@ class TestUtils
         }
         
         // Create new test database
-        $pdo = new PDO("sqlite:$dbPath");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo = new \PDO("sqlite:$dbPath");
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         
         // Create tables (simplified schema for testing)
         $pdo->exec("
@@ -78,7 +90,7 @@ class TestUtils
             )
         ");
         
-        $pdo->close();
+        $pdo = null;
     }
     
     /**
@@ -87,8 +99,8 @@ class TestUtils
     public static function setupTestData()
     {
         $dbPath = $_ENV['TEST_DATABASE_PATH'];
-        $pdo = new PDO("sqlite:$dbPath");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo = new \PDO("sqlite:$dbPath");
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         
         // Insert test configuration
         $pdo->exec("
@@ -106,7 +118,7 @@ class TestUtils
             ('session_test_123', 'test_uid_456', '127.0.0.1')
         ");
         
-        $pdo->close();
+        $pdo = null;
     }
     
     /**
@@ -125,16 +137,33 @@ class TestUtils
      */
     public static function mockRequest($method = 'GET', $uri = '/', $params = [], $headers = [])
     {
+        // Clear any existing output
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Set up HTTP environment
         $_SERVER['REQUEST_METHOD'] = $method;
         $_SERVER['REQUEST_URI'] = $uri;
+        $_SERVER['HTTP_HOST'] = 'localhost';
+        $_SERVER['SERVER_PORT'] = '80';
+        $_SERVER['HTTP_USER_AGENT'] = 'PHPUnit Test';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        
+        // Set query parameters
         $_GET = $params;
         $_POST = $method === 'POST' ? $params : [];
+        
+        // Set headers
         $_SERVER['HTTP_ACCEPT'] = $headers['Accept'] ?? 'application/json';
         $_SERVER['HTTP_CONTENT_TYPE'] = $headers['Content-Type'] ?? 'application/json';
         
         if (isset($headers['Authorization'])) {
             $_SERVER['HTTP_AUTHORIZATION'] = $headers['Authorization'];
         }
+        
+        // Start output buffering
+        ob_start();
     }
     
     /**
@@ -142,7 +171,8 @@ class TestUtils
      */
     public static function captureOutput($callback)
     {
-        ob_start();
+        // The output buffering is already started in mockRequest
+        // Just execute the callback and capture the output
         $callback();
         $output = ob_get_contents();
         ob_end_clean();
@@ -175,7 +205,7 @@ class TestUtils
         // Check if response contains JSON
         $jsonData = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception("Response is not valid JSON: " . json_last_error_msg());
+            throw new \Exception("Response is not valid JSON: " . json_last_error_msg());
         }
         
         return $jsonData;
@@ -213,5 +243,104 @@ class TestUtils
             'notifications' => true,
             'sound' => true
         ];
+    }
+
+    public static function testWidgetEndpoint($endpoint, $method = 'GET', $params = [], $headers = [])
+    {
+        // Set up the request environment
+        $_SERVER['REQUEST_METHOD'] = $method;
+        $_SERVER['REQUEST_URI'] = '/widget/' . $endpoint;
+        $_SERVER['HTTP_HOST'] = 'localhost';
+        $_SERVER['SERVER_PORT'] = '80';
+        $_SERVER['HTTP_USER_AGENT'] = 'PHPUnit Test';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        
+        // Set GET parameters
+        $_GET = $params;
+        
+        // Set headers
+        foreach ($headers as $key => $value) {
+            $_SERVER['HTTP_' . strtoupper(str_replace('-', '_', $key))] = $value;
+        }
+        
+        // Mock the response functions to prevent immediate execution
+        self::mockResponseFunctions();
+        
+        // Start output buffering
+        ob_start();
+        
+        // Include the endpoint file
+        $endpointFile = __DIR__ . '/../public/widget/' . $endpoint . '.php';
+        if (file_exists($endpointFile)) {
+            include $endpointFile;
+        } else {
+            throw new \Exception("Endpoint file not found: $endpointFile");
+        }
+        
+        // Capture output
+        $output = ob_get_contents();
+        ob_end_clean();
+        
+        // Reset globals
+        $_GET = [];
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/';
+        
+        // Restore original functions
+        self::restoreResponseFunctions();
+        
+        return $output;
+    }
+
+    private static function mockResponseFunctions()
+    {
+        // Store original functions
+        if (!function_exists('send_success_response_original')) {
+            if (function_exists('send_success_response')) {
+                rename('send_success_response', 'send_success_response_original');
+            }
+            if (function_exists('send_error_response')) {
+                rename('send_error_response', 'send_error_response_original');
+            }
+        }
+        
+        // Create mock versions that don't exit
+        if (!function_exists('send_success_response')) {
+            function send_success_response($data = null, $message = 'Success', $status_code = 200) {
+                $response = [
+                    'success' => true,
+                    'message' => $message,
+                    'timestamp' => date('c'),
+                    'data' => $data
+                ];
+                echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            }
+        }
+        
+        if (!function_exists('send_error_response')) {
+            function send_error_response($error, $status_code = 400, $details = []) {
+                $response = [
+                    'success' => false,
+                    'error' => $error,
+                    'code' => $status_code,
+                    'timestamp' => date('c')
+                ];
+                if (!empty($details)) {
+                    $response['details'] = $details;
+                }
+                echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            }
+        }
+    }
+
+    private static function restoreResponseFunctions()
+    {
+        // Restore original functions if they exist
+        if (function_exists('send_success_response_original')) {
+            rename('send_success_response_original', 'send_success_response');
+        }
+        if (function_exists('send_error_response_original')) {
+            rename('send_error_response_original', 'send_error_response');
+        }
     }
 }

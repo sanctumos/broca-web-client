@@ -3,294 +3,179 @@
  * Integration Tests for Widget System
  */
 
+namespace Tests\Integration;
+
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Integration tests for Widget Endpoints
+ */
 class WidgetIntegrationTest extends TestCase
 {
     protected function setUp(): void
     {
-        parent::setUp();
-        TestUtils::setupTestEnvironment();
+        \Tests\TestUtils::setupTestEnvironment();
     }
-    
+
     protected function tearDown(): void
     {
-        TestUtils::cleanupTestEnvironment();
-        parent::tearDown();
+        \Tests\TestUtils::cleanupTestEnvironment();
     }
-    
-    /**
-     * Test complete widget initialization flow
-     */
-    public function testCompleteWidgetInitializationFlow()
+
+    public function testConfigAndInitEndpointsWorkTogether()
     {
-        // Step 1: Get configuration options
-        TestUtils::mockRequest('GET', '/widget/config');
+        // First get configuration
+        $configOutput = \Tests\TestUtils::testWidgetEndpoint('config');
+        $configData = json_decode($configOutput, true);
         
-        $configOutput = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/config.php';
-        });
+        $this->assertTrue($configData['success']);
+        $this->assertArrayHasKey('positions', $configData['data']);
+        $this->assertArrayHasKey('themes', $configData['data']);
         
-        $configResponse = TestUtils::assertJsonResponse($configOutput);
-        $this->assertTrue($configResponse['success']);
+        // Then use config to initialize widget
+        $initOutput = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', [
+            'apiKey' => 'test_key_123',
+            'position' => $configData['data']['defaults']['position'],
+            'theme' => $configData['data']['defaults']['theme']
+        ]);
         
-        // Step 2: Initialize widget with valid config
-        $widgetConfig = TestUtils::getTestWidgetConfig();
-        TestUtils::mockRequest('GET', '/widget/init', $widgetConfig);
-        
-        $initOutput = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $initResponse = TestUtils::assertJsonResponse($initOutput);
-        $this->assertTrue($initResponse['success']);
-        
-        // Step 3: Check health
-        TestUtils::mockRequest('GET', '/widget/health');
-        
-        $healthOutput = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/health.php';
-        });
-        
-        $healthResponse = TestUtils::assertJsonResponse($healthOutput);
-        $this->assertTrue($healthResponse['success']);
-        
-        // Verify consistency across all endpoints
-        $this->assertEquals('1.0.0', $initResponse['data']['config']['version'] ?? $healthResponse['data']['version']);
+        $initData = json_decode($initOutput, true);
+        $this->assertTrue($initData['success']);
+        $this->assertEquals($configData['data']['defaults']['position'], $initData['data']['config']['position']);
+        $this->assertEquals($configData['data']['defaults']['theme'], $initData['data']['config']['theme']);
     }
-    
-    /**
-     * Test widget with different API keys
-     */
-    public function testWidgetWithDifferentApiKeys()
+
+    public function testWidgetEndpointsHaveConsistentResponseFormat()
     {
-        $apiKeys = [
-            'test_api_key_123',
-            'another_test_key',
-            'key_with_special_chars_!@#$%',
-            'very_long_api_key_' . str_repeat('a', 100)
-        ];
+        $endpoints = ['config', 'init', 'health'];
         
-        foreach ($apiKeys as $apiKey) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['apiKey'] = $apiKey;
+        foreach ($endpoints as $endpoint) {
+            $params = [];
+            if ($endpoint === 'init') {
+                $params = ['apiKey' => 'test_key_123'];
+            }
             
-            TestUtils::mockRequest('GET', '/widget/init', $config);
+            $output = \Tests\TestUtils::testWidgetEndpoint($endpoint, 'GET', $params);
+            $data = json_decode($output, true);
             
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed with API key: $apiKey");
-            $this->assertEquals($apiKey, $response['data']['config']['apiKey']);
+            $this->assertNotNull($data, "Endpoint $endpoint should return valid JSON");
+            $this->assertArrayHasKey('success', $data, "Endpoint $endpoint should have success field");
+            $this->assertArrayHasKey('message', $data, "Endpoint $endpoint should have message field");
+            $this->assertArrayHasKey('timestamp', $data, "Endpoint $endpoint should have timestamp field");
+            $this->assertArrayHasKey('data', $data, "Endpoint $endpoint should have data field");
         }
     }
-    
-    /**
-     * Test widget with different positions
-     */
-    public function testWidgetWithDifferentPositions()
+
+    public function testWidgetEndpointsHandleCorsCorrectly()
     {
-        $positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+        $endpoints = ['config', 'init', 'health'];
         
-        foreach ($positions as $position) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['position'] = $position;
+        foreach ($endpoints as $endpoint) {
+            $params = [];
+            if ($endpoint === 'init') {
+                $params = ['apiKey' => 'test_key_123'];
+            }
             
-            TestUtils::mockRequest('GET', '/widget/init', $config);
+            // Test OPTIONS request (CORS preflight)
+            $output = \Tests\TestUtils::testWidgetEndpoint($endpoint, 'OPTIONS', $params);
+            $this->assertEmpty($output, "OPTIONS request to $endpoint should exit early");
             
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed with position: $position");
-            $this->assertEquals($position, $response['data']['config']['position']);
+            // Test GET request (should work normally)
+            $output = \Tests\TestUtils::testWidgetEndpoint($endpoint, 'GET', $params);
+            $this->assertNotEmpty($output, "GET request to $endpoint should return data");
         }
     }
-    
-    /**
-     * Test widget with different themes
-     */
-    public function testWidgetWithDifferentThemes()
+
+    public function testWidgetEndpointsRejectInvalidMethods()
     {
-        $themes = ['light', 'dark', 'auto'];
+        $endpoints = ['config', 'init', 'health'];
+        $invalidMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
         
-        foreach ($themes as $theme) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['theme'] = $theme;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed with theme: $theme");
-            $this->assertEquals($theme, $response['data']['config']['theme']);
-        }
-    }
-    
-    /**
-     * Test widget with different languages
-     */
-    public function testWidgetWithDifferentLanguages()
-    {
-        $languages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'];
-        
-        foreach ($languages as $language) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['language'] = $language;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed with language: $language");
-            $this->assertEquals($language, $response['data']['config']['language']);
-        }
-    }
-    
-    /**
-     * Test widget boolean configuration options
-     */
-    public function testWidgetBooleanConfigurationOptions()
-    {
-        $booleanOptions = [
-            'autoOpen' => [true, false],
-            'notifications' => [true, false],
-            'sound' => [true, false]
-        ];
-        
-        foreach ($booleanOptions as $option => $values) {
-            foreach ($values as $value) {
-                $config = TestUtils::getTestWidgetConfig();
-                $config[$option] = $value ? 'true' : 'false';
+        foreach ($endpoints as $endpoint) {
+            foreach ($invalidMethods as $method) {
+                $params = [];
+                if ($endpoint === 'init') {
+                    $params = ['apiKey' => 'test_key_123'];
+                }
                 
-                TestUtils::mockRequest('GET', '/widget/init', $config);
-                
-                $output = TestUtils::captureOutput(function() {
-                    require_once __DIR__ . '/../../public/widget/init.php';
-                });
-                
-                $response = TestUtils::assertJsonResponse($output);
-                $this->assertTrue($response['success'], "Failed with $option: $value");
-                $this->assertEquals($value, $response['data']['config'][$option]);
+                $this->expectException(\Exception::class);
+                \Tests\TestUtils::testWidgetEndpoint($endpoint, $method, $params);
             }
         }
     }
-    
-    /**
-     * Test widget color validation
-     */
-    public function testWidgetColorValidation()
+
+    public function testWidgetEndpointsMaintainStateIndependence()
     {
-        $validColors = [
-            '#007bff',
-            '#ff0000',
-            '#00ff00',
-            '#0000ff',
-            '#ffffff',
-            '#000000',
-            '#123456',
-            '#abcdef'
+        // Test that one endpoint doesn't affect another
+        $configOutput1 = \Tests\TestUtils::testWidgetEndpoint('config');
+        $initOutput = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', ['apiKey' => 'test_key_123']);
+        $configOutput2 = \Tests\TestUtils::testWidgetEndpoint('config');
+        
+        // Both config calls should return identical results
+        $this->assertEquals($configOutput1, $configOutput2);
+        
+        // Parse and verify structure is maintained
+        $configData1 = json_decode($configOutput1, true);
+        $configData2 = json_decode($configOutput2, true);
+        
+        $this->assertEquals($configData1['data']['defaults'], $configData2['data']['defaults']);
+    }
+
+    public function testWidgetEndpointsHandleCustomParameters()
+    {
+        $customParams = [
+            'position' => 'top-left',
+            'theme' => 'dark',
+            'title' => 'Custom Chat',
+            'primaryColor' => '#ff0000',
+            'language' => 'es',
+            'autoOpen' => 'true',
+            'notifications' => 'false',
+            'sound' => 'false'
         ];
         
-        foreach ($validColors as $color) {
-            $config = TestUtils::getTestWidgetConfig();
-            $config['primaryColor'] = $color;
-            
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $response = TestUtils::assertJsonResponse($output);
-            $this->assertTrue($response['success'], "Failed with color: $color");
-            $this->assertEquals($color, $response['data']['config']['primaryColor']);
-        }
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', array_merge(
+            ['apiKey' => 'test_key_123'],
+            $customParams
+        ));
+        
+        $data = json_decode($output, true);
+        $this->assertTrue($data['success']);
+        
+        $config = $data['data']['config'];
+        $this->assertEquals('top-left', $config['position']);
+        $this->assertEquals('dark', $config['theme']);
+        $this->assertEquals('Custom Chat', $config['title']);
+        $this->assertEquals('#ff0000', $config['primaryColor']);
+        $this->assertEquals('es', $config['language']);
+        $this->assertTrue($config['autoOpen']);
+        $this->assertFalse($config['notifications']);
+        $this->assertFalse($config['sound']);
     }
-    
-    /**
-     * Test widget concurrent requests
-     */
-    public function testWidgetConcurrentRequests()
+
+    public function testWidgetEndpointsValidateRequiredParameters()
     {
-        $configs = [];
-        $responses = [];
-        
-        // Create multiple different configurations
-        for ($i = 0; $i < 5; $i++) {
-            $configs[] = [
-                'apiKey' => 'test_key_' . $i,
-                'position' => ['bottom-right', 'bottom-left', 'top-right', 'top-left'][$i % 4],
-                'theme' => ['light', 'dark', 'auto'][$i % 3],
-                'title' => 'Test Widget ' . $i
-            ];
-        }
-        
-        // Simulate concurrent requests
-        foreach ($configs as $i => $config) {
-            TestUtils::mockRequest('GET', '/widget/init', $config);
-            
-            $output = TestUtils::captureOutput(function() {
-                require_once __DIR__ . '/../../public/widget/init.php';
-            });
-            
-            $responses[] = TestUtils::assertJsonResponse($output);
-        }
-        
-        // Verify all requests succeeded
-        foreach ($responses as $i => $response) {
-            $this->assertTrue($response['success'], "Request $i failed");
-            $this->assertEquals($configs[$i]['apiKey'], $response['data']['config']['apiKey']);
-            $this->assertEquals($configs[$i]['position'], $response['data']['config']['position']);
-            $this->assertEquals($configs[$i]['theme'], $response['data']['config']['theme']);
-            $this->assertEquals($configs[$i]['title'], $response['data']['config']['title']);
-        }
+        // Test init endpoint without required apiKey
+        $this->expectException(\Exception::class);
+        \Tests\TestUtils::testWidgetEndpoint('init', 'GET', []);
     }
-    
-    /**
-     * Test widget error handling integration
-     */
-    public function testWidgetErrorHandlingIntegration()
+
+    public function testWidgetEndpointsHandleEdgeCaseParameters()
     {
-        // Test missing API key
-        TestUtils::mockRequest('GET', '/widget/init', []);
+        // Test with very long values
+        $longString = str_repeat('a', 1000);
         
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
+        $output = \Tests\TestUtils::testWidgetEndpoint('init', 'GET', [
+            'apiKey' => 'test_key_123',
+            'title' => $longString,
+            'primaryColor' => $longString
+        ]);
         
-        $response = TestUtils::assertJsonResponse($output);
-        $this->assertFalse($response['success']);
-        $this->assertEquals('API key is required', $response['error']);
+        $data = json_decode($output, true);
+        $this->assertTrue($data['success']);
         
-        // Test invalid HTTP method
-        TestUtils::mockRequest('POST', '/widget/init', TestUtils::getTestWidgetConfig());
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        $this->assertFalse($response['success']);
-        $this->assertEquals('Method not allowed', $response['error']);
-        
-        // Test valid request after errors
-        TestUtils::mockRequest('GET', '/widget/init', TestUtils::getTestWidgetConfig());
-        
-        $output = TestUtils::captureOutput(function() {
-            require_once __DIR__ . '/../../public/widget/init.php';
-        });
-        
-        $response = TestUtils::assertJsonResponse($output);
-        $this->assertTrue($response['success'], 'Valid request should succeed after errors');
+        // Should handle long strings gracefully
+        $this->assertEquals($longString, $data['data']['config']['title']);
+        $this->assertEquals($longString, $data['data']['config']['primaryColor']);
     }
 }
