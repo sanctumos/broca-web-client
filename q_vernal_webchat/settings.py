@@ -51,8 +51,8 @@ class WebChatSettings:
         """Create settings from environment variables."""
         try:
             return cls(
-                api_url=os.getenv('WEB_CHAT_API_URL', 'http://localhost:8000'),
-                api_key=os.getenv('WEB_CHAT_API_KEY', ''),
+                api_url=os.getenv('TASKS_Q_BRIDGE_API_URL', os.getenv('WEB_CHAT_API_URL', 'http://localhost:8000')),
+                api_key=os.getenv('TASKS_Q_BRIDGE_POLL_API_KEY', os.getenv('WEB_CHAT_API_KEY', '')),
                 poll_interval=int(os.getenv('WEB_CHAT_POLL_INTERVAL', '5')),
                 max_retries=int(os.getenv('WEB_CHAT_MAX_RETRIES', '3')),
                 retry_delay=int(os.getenv('WEB_CHAT_RETRY_DELAY', '10')),
