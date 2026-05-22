@@ -11,7 +11,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from plugins.web_chat.settings import WebChatSettings
+from q_vernal_webchat.settings import WebChatSettings
 
 
 class WebChatAPIClient:

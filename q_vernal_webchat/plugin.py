@@ -1,5 +1,5 @@
 """
-Web Chat Plugin for Broca2
+Q Vernal Web Chat Plugin for Broca2
 
 This plugin polls a PHP-based web chat API and processes messages through the Broca2 agent system.
 It follows the pull-based architecture where the plugin polls for new messages and posts responses back.
@@ -14,13 +14,13 @@ from plugins import Plugin, Event, EventType
 import logging
 
 
-from plugins.web_chat.settings import WebChatSettings
-from plugins.web_chat.api_client import WebChatAPIClient
-from plugins.web_chat.message_handler import WebChatMessageHandler
+from q_vernal_webchat.settings import WebChatSettings
+from q_vernal_webchat.api_client import WebChatAPIClient
+from q_vernal_webchat.message_handler import WebChatMessageHandler
 
 
-class WebChatPlugin(Plugin):
-    """Web Chat Plugin for Broca2."""
+class QVernalWebChatPlugin(Plugin):
+    """Q Vernal Web Chat Plugin for Broca2."""
     
     def __init__(self, settings: Optional[WebChatSettings] = None):
         self.settings = settings  # Initialize lazily
@@ -70,14 +70,14 @@ class WebChatPlugin(Plugin):
                 self.logger.error("Failed to connect to web chat API")
                 return
             
-            self.logger.info("Web Chat Plugin started successfully")
+            self.logger.info("Q Vernal Web Chat Plugin started successfully")
             self.is_running = True
             
             # Start polling task
             self.polling_task = asyncio.create_task(self._poll_messages())
             
         except Exception as e:
-            self.logger.error(f"Error starting Web Chat Plugin: {e}")
+            self.logger.error(f"Error starting Q Vernal Web Chat Plugin: {e}")
             raise
     
     async def stop(self):
@@ -85,7 +85,7 @@ class WebChatPlugin(Plugin):
         if not self.is_running:
             return
         
-        self.logger.info("Stopping Web Chat Plugin...")
+        self.logger.info("Stopping Q Vernal Web Chat Plugin...")
         self.is_running = False
         
         # Cancel polling task
@@ -100,7 +100,7 @@ class WebChatPlugin(Plugin):
         if self.api_client and self.api_client.session:
             await self.api_client.session.close()
         
-        self.logger.info("Web Chat Plugin stopped")
+        self.logger.info("Q Vernal Web Chat Plugin stopped")
     
     def get_settings(self) -> Dict[str, Any]:
         """Get plugin settings."""
