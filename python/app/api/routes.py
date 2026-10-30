@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from app.utils.database import DatabaseManager
+from app.utils.database import DatabaseManager, begin_inbox_micropoll, end_inbox_micropoll
 from app.utils.rate_limiting import RateLimitManager
 from app.api.auth import require_auth, require_admin_auth
 import re
@@ -205,6 +205,7 @@ def handle_inbox():
     offset = int(request.args.get('offset', 0))
     since = request.args.get('since', '')
     
+    token = begin_inbox_micropoll()
     try:
         db = get_db()
         
@@ -236,7 +237,9 @@ def handle_inbox():
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+        return jsonify({'success': False, 'error': 'Inbox busy', 'code': 503}), 503
+    finally:
+        end_inbox_micropoll(token)
 
 def handle_outbox():
     """Handle POST /api/v1/?action=outbox - IDENTICAL to PHP"""

@@ -1,8 +1,31 @@
 import sqlite3
 import json
 import os
+import contextvars
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List, Any
+
+_inbox_micropoll = contextvars.ContextVar('webchat_inbox_micropoll', default=False)
+
+
+def inbox_busy_timeout_seconds() -> float:
+    raw = os.environ.get('WEBCHAT_INBOX_BUSY_TIMEOUT_MS', '')
+    if str(raw).strip():
+        try:
+            ms = max(50, min(5000, int(raw)))
+        except ValueError:
+            ms = 2000
+        return ms / 1000.0
+    return 2.0
+
+
+def begin_inbox_micropoll():
+    return _inbox_micropoll.set(True)
+
+
+def end_inbox_micropoll(token) -> None:
+    _inbox_micropoll.reset(token)
+
 
 class DatabaseManager:
     def __init__(self, db_path: str = None):
@@ -22,8 +45,13 @@ class DatabaseManager:
     
     def get_connection(self):
         """Get database connection"""
-        conn = sqlite3.connect(self.db_path)
+        timeout = inbox_busy_timeout_seconds() if _inbox_micropoll.get() else 30.0
+        conn = sqlite3.connect(self.db_path, timeout=timeout)
         conn.row_factory = sqlite3.Row
+        try:
+            conn.execute('PRAGMA busy_timeout={}'.format(int(timeout * 1000)))
+        except sqlite3.Error:
+            pass
         return conn
     
     def init_database(self):

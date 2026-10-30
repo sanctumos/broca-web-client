@@ -145,6 +145,8 @@ function handle_inbox() {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         send_error_response('Method not allowed', 405);
     }
+
+    webchat_bridge_begin_inbox_micropoll();
     
     // Authentication required
     require_auth();
@@ -222,8 +224,8 @@ function handle_inbox() {
         ]);
         
     } catch (Exception $e) {
-        log_api_request('/api/inbox', 'GET', [], 500);
-        send_error_response('Internal server error', 500);
+        log_api_request('/api/inbox', 'GET', [], 503);
+        send_error_response('Inbox busy', 503);
     }
 }
 

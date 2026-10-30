@@ -3,6 +3,8 @@
  * Database configuration for Web Chat Bridge
  */
 
+require_once __DIR__ . '/../includes/webchat_inbox_micropoll.php';
+
 // Database configuration
 define('DB_PATH', __DIR__ . '/../../db/web_chat.db');
 define('DB_TIMEOUT', 30);
@@ -12,7 +14,7 @@ function get_db_connection() {
     try {
         $pdo = new PDO('sqlite:' . DB_PATH);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->setAttribute(PDO::ATTR_TIMEOUT, DB_TIMEOUT);
+        webchat_bridge_apply_pdo_timeout($pdo, DB_TIMEOUT);
         return $pdo;
     } catch (PDOException $e) {
         error_log("Database connection failed: " . $e->getMessage());

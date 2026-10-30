@@ -175,6 +175,8 @@ Send a message from the web chat widget.
 #### GET /api/v1/index.php?action=inbox
 Retrieve unprocessed messages for Broca2 plugin (requires API key).
 
+This is a micro-poll: SQLite waits **2 seconds** then returns **503 Inbox busy** so PHP-FPM workers are not held until nginx 504s. Broca's next poll retries; unprocessed rows stay in queue. Override: `WEBCHAT_INBOX_BUSY_TIMEOUT_MS`.
+
 **Query Parameters:**
 - `limit` (optional): Number of messages to return (default: 50, max: 100)
 - `offset` (optional): Number of messages to skip (default: 0)

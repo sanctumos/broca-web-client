@@ -29,8 +29,8 @@ class TestAPIInboxOutboxErrorConditions:
                 
                 result = handle_inbox()
                 
-                assert result[1] == 500  # Internal server error
-                assert 'Internal server error' in result[0].json['error']
+                assert result[1] == 503
+                assert 'Inbox busy' in result[0].json['error']
     
     @patch('app.api.routes.require_auth_internal')
     @patch('app.api.routes.get_db')
@@ -57,8 +57,8 @@ class TestAPIInboxOutboxErrorConditions:
                 
                 result = handle_inbox()
                 
-                assert result[1] == 500  # Internal server error
-                assert 'Internal server error' in result[0].json['error']
+                assert result[1] == 503
+                assert 'Inbox busy' in result[0].json['error']
     
     @patch('app.api.routes.require_auth_internal')
     @patch('app.api.routes.get_db')
@@ -86,8 +86,8 @@ class TestAPIInboxOutboxErrorConditions:
                 
                 result = handle_inbox()
                 
-                assert result[1] == 500  # Internal server error
-                assert 'Internal server error' in result[0].json['error']
+                assert result[1] == 503
+                assert 'Inbox busy' in result[0].json['error']
     
     @patch('app.api.routes.require_auth_internal')
     @patch('app.api.routes.get_db')

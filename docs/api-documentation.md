@@ -65,7 +65,7 @@ All API responses follow a consistent JSON format:
 
 **Endpoint:** `GET /api/v1/?action=inbox`
 
-**Description:** Retrieve unprocessed messages for Broca2 plugin processing.
+**Description:** Retrieve unprocessed messages for Broca2 plugin processing. Micro-poll: **2s** SQLite wait then **503 Inbox busy** (`WEBCHAT_INBOX_BUSY_TIMEOUT_MS`).
 
 **Authentication:** API Key required
 
